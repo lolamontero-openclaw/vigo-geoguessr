@@ -105,6 +105,10 @@ select:focus,input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--a
 .rb-place{font-weight:800;font-size:1.05rem;letter-spacing:-.01em}
 .rb-dist{color:var(--muted);font-size:.9rem;margin-top:3px}
 .rb-dist b{color:var(--accent)}
+.rb-credit{color:var(--muted2);font-size:.72rem;margin-top:4px;line-height:1.3}
+.rb-credit a{color:var(--muted2)}
+td.credit{color:var(--muted2);font-size:.72rem;font-weight:500}
+.foot-credit{color:var(--muted2);font-size:.78rem;margin-top:6px}
 
 /* mapa EN RECUADRO (como el bueno) */
 .map-panel{position:relative;background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;padding:14px;gap:12px}
@@ -179,7 +183,7 @@ table.rtable .ph .nop{width:62px;height:44px;border-radius:8px;display:grid;plac
         <p class="tagline">GeoGuessr de Vigo: mira la foto y sitúala en el mapa.</p>
       </div>
     </div>
-    <div class="pool-chip"><span class="dot"></span><span><b id="poolCount">99</b> localizaciones de Vigo listas (centro · afueras · Cíes)</span></div>
+    <div class="pool-chip"><span class="dot"></span><span><b id="poolCount">…</b> localizaciones de Vigo (coordenada real de cada foto)</span></div>
 
     <div class="cards">
       <div class="card">
@@ -192,7 +196,7 @@ table.rtable .ph .nop{width:62px;height:44px;border-radius:8px;display:grid;plac
             <option value="12">12</option>
             <option value="20">20</option>
             <option value="30">30</option>
-            <option value="99">Todas (99)</option>
+            <option value="all">Todas</option>
           </select>
         </label>
         <label class="field"><span>Dificultad (tiempo + zoom del mapa)</span>
@@ -223,6 +227,7 @@ table.rtable .ph .nop{width:62px;height:44px;border-radius:8px;display:grid;plac
     </div>
 
     <p class="foot">Mapa © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>. Fotos © sus autores en <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>. Área: Vigo municipio + Islas Cíes.</p>
+    <p class="foot foot-credit">Cada foto se muestra bajo su licencia (CC BY-SA / CC BY / dominio público) con el nombre de su autor. La posición real de cada foto se extrae de la ficha de Commons.</p>
   </div>
 </section>
 
@@ -302,129 +307,74 @@ table.rtable .ph .nop{width:62px;height:44px;border-radius:8px;display:grid;plac
 const $=id=>document.getElementById(id);
 const fp=t=>t?`https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(t.replace(/^File:/i,""))}?width=1600`:"";
 
-/* ===== BANCO: 99 localizaciones de Vigo (centro + afueras + Cíes). Coordenada por LUGAR. ===== */
-const POOL=[
-// --- Centro: calles y plazas ---
-{t:"Navidad_en_la_Calle_del_Príncipe.jpg",lat:42.2381,lng:-8.7222,place:"Calle del Príncipe (adornos navideños)"},
-{t:"Vigo,_rúa_Príncipe_dende_a_Porta_do_Sol.JPG",lat:42.2370,lng:-8.7207,place:"Calle del Príncipe desde la Puerta del Sol"},
-{t:"Vigo,_CALLE_DEL_PRÍNCIPE,_LADO_DEL_GIMNASIO,_Eugenio_Krapf.jpg",lat:42.2384,lng:-8.7230,place:"Calle del Príncipe, lado del gimnasio"},
-{t:"Rúa_do_Príncipe,_Vigo.jpg",lat:42.2378,lng:-8.7216,place:"Rúa do Príncipe"},
-{t:"A_rúa_do_Príncipe._Vigo.jpg",lat:42.2377,lng:-8.7214,place:"A rúa do Príncipe"},
-{t:"Vigo-Principe91_(3196735180).jpg",lat:42.2379,lng:-8.7219,place:"Calle del Príncipe (vista histórica)"},
-{t:"Navidad_en_la_farola_de_la_calle_Urzáiz_de_Vigo.jpg",lat:42.2365,lng:-8.7232,place:"A Farola · cruce Urzáiz"},
-{t:"",lat:42.2362,lng:-8.7235,place:"Calle Urzáiz"},
-{t:"",lat:42.2400,lng:-8.7180,place:"Gran Vía de Vigo"},
-{t:"",lat:42.2395,lng:-8.7165,place:"Vía Norte"},
-{t:"",lat:42.2380,lng:-8.7200,place:"Calle de Colón"},
-{t:"",lat:42.2400,lng:-8.7150,place:"Travesía de Vigo"},
-{t:"",lat:42.2382,lng:-8.7210,place:"Rúa Policarpo Sanz"},
-{t:"",lat:42.2372,lng:-8.7212,place:"Rúa Rosalía de Castro"},
-{t:"",lat:42.2370,lng:-8.7230,place:"Rúa da Reconquista"},
-{t:"",lat:42.2360,lng:-8.7240,place:"Praza de Compostela"},
-{t:"",lat:42.2372,lng:-8.7232,place:"Praza de América"},
-{t:"",lat:42.2368,lng:-8.7205,place:"Porta do Sol"},
-{t:"",lat:42.2360,lng:-8.7245,place:"Calle Real (Casco Vello)"},
-{t:"",lat:42.2358,lng:-8.7250,place:"Praza da Igrexa · Colegiata de Santa María"},
-{t:"",lat:42.2362,lng:-8.7242,place:"Casa Consistorial (Concello de Vigo)"},
-{t:"",lat:42.2340,lng:-8.7270,place:"Rúa do Areal"},
-{t:"",lat:42.2332,lng:-8.7272,place:"Rúa de Oporto"},
-{t:"",lat:42.2332,lng:-8.7272,place:"Edificio Bonín (Areal esquina Oporto)"},
-{t:"",lat:42.2375,lng:-8.7228,place:"Calle Príncipe · zona comercial"},
-{t:"",lat:42.2366,lng:-8.7226,place:"Calle Urzáiz · bajos comerciales"},
-{t:"",lat:42.2390,lng:-8.7195,place:"Praza de España"},
-{t:"",lat:42.2355,lng:-8.7260,place:"Rúa de Pérez Bazán"},
-{t:"",lat:42.2378,lng:-8.7205,place:"Rúa do Progreso"},
-{t:"",lat:42.2368,lng:-8.7218,place:"Rúa de Cid"},
-// --- Centro: monumentos / equipamientos ---
-{t:"Museo_de_Arte_Contemporánea_001.JPG",lat:42.2389,lng:-8.7243,place:"MARCO · Museo de Arte Contemporánea"},
-{t:"A_Sede_(Celta_de_Vigo).jpg",lat:42.2382,lng:-8.7225,place:"A Sede · sede del Celta de Vigo"},
-{t:"Casa_Torre_de_Pazos_Figueroa_y_Casa_Torre_de_Ceta_Arines,_Vigo.jpg",lat:42.2362,lng:-8.7240,place:"Casas Torres de los Pazos Figueroa y Ceta Arines"},
-{t:"",lat:42.2330,lng:-8.7330,place:"Auditorio do Mar de Vigo"},
-{t:"",lat:42.2372,lng:-8.7255,place:"Puerto de Vigo · A Laxe"},
-{t:"",lat:42.2370,lng:-8.7262,place:"Puerto de Vigo · Muelle de Trasatlánticos"},
-{t:"",lat:42.2332,lng:-8.7120,place:"Estación de Vigo-Guixar"},
-{t:"",lat:42.2348,lng:-8.7118,place:"Estación de autobuses de Vigo"},
-{t:"",lat:42.2360,lng:-8.7238,place:"Teatro García Barbón"},
-{t:"",lat:42.2372,lng:-8.7222,place:"Igrexa dos Capuchinos"},
-// --- Barrios / afueras ---
-{t:"",lat:42.2420,lng:-8.7050,place:"Barrio de Coia"},
-{t:"",lat:42.2420,lng:-8.7000,place:"Barrio de Navia"},
-{t:"",lat:42.2250,lng:-8.7000,place:"Barrio de Teis"},
-{t:"",lat:42.2450,lng:-8.7450,place:"Barrio de Bouzas"},
-{t:"",lat:42.2250,lng:-8.7600,place:"Barrio de Cabral"},
-{t:"",lat:42.2150,lng:-8.7200,place:"Barrio de Valladares"},
-{t:"",lat:42.2220,lng:-8.7050,place:"Zona de Meixoeiro"},
-{t:"",lat:42.2300,lng:-8.7300,place:"Barrio de Beade"},
-{t:"",lat:42.2350,lng:-8.7550,place:"Barrio de Zamáns"},
-{t:"",lat:42.2200,lng:-8.7300,place:"Barrio de Sárdoma"},
-{t:"",lat:42.2400,lng:-8.7150,place:"Barrio de O Calvario"},
-{t:"",lat:42.2450,lng:-8.7100,place:"Barrio de Fontáns"},
-{t:"",lat:42.2300,lng:-8.7320,place:"As Travesas"},
-{t:"",lat:42.2400,lng:-8.7300,place:"Lavadores / Rubianes"},
-{t:"",lat:42.2130,lng:-8.7000,place:"Hospital Álvaro Cunqueiro"},
-{t:"",lat:42.2220,lng:-8.7420,place:"Parque de Castrelos"},
-{t:"",lat:42.2222,lng:-8.7425,place:"Pazo de Castrelos"},
-{t:"",lat:42.2220,lng:-8.7400,place:"Xardín Botánico de Vigo (Castrelos)"},
-{t:"",lat:42.2130,lng:-8.7220,place:"Zoológico de Vigo (Valladares)"},
-{t:"",lat:42.2200,lng:-8.6530,place:"Aeroporto de Vigo (Peinador)"},
-{t:"",lat:42.2420,lng:-8.7350,place:"Campus universitario de As Lagoas"},
-{t:"",lat:42.2430,lng:-8.7010,place:"Campus universitario de Navia"},
-{t:"",lat:42.2450,lng:-8.7430,place:"Campus universitario de Bouzas"},
-// --- Playas / ría / montes ---
-{t:"",lat:42.2120,lng:-8.7830,place:"Playa de Samil"},
-{t:"",lat:42.2110,lng:-8.7880,place:"Playa de Samil · zona de aparcamento"},
-{t:"",lat:42.2230,lng:-8.7900,place:"Playa das Areas (Cabral)"},
-{t:"",lat:42.2260,lng:-8.7850,place:"Playa de Rodás? non · Praia da Madorra"},
-{t:"",lat:42.2350,lng:-8.7270,place:"Monte de O Castro"},
-{t:"",lat:42.2460,lng:-8.7120,place:"Monte de Alba"},
-{t:"",lat:42.2440,lng:-8.7080,place:"A Madroa"},
-{t:"",lat:42.2300,lng:-8.7400,place:"Monte de Galiña"},
-{t:"",lat:42.2180,lng:-8.7150,place:"Val do Fragoso"},
-{t:"",lat:42.2370,lng:-8.7270,place:"Paseo de A Laxe · beira da ría"},
-{t:"",lat:42.2340,lng:-8.7290,place:"Paseo de Afonso XIII (beira)"},
-{t:"",lat:42.2280,lng:-8.7350,place:"Parque da Coruña / Navia verde"},
-{t:"",lat:42.2410,lng:-8.7250,place:"Praza de Cuba"},
-{t:"",lat:42.2390,lng:-8.7170,place:"Praza de Elíptica"},
-{t:"",lat:42.2360,lng:-8.7190,place:"Rúa de García Barbón"},
-// --- Islas Cíes (Vigo) ---
-{t:"",lat:42.2350,lng:-8.8930,place:"Playa de Rodas (Illas Cíes)"},
-{t:"",lat:42.2320,lng:-8.8980,place:"Faro de Cíes (Illas Cíes)"},
-{t:"",lat:42.2370,lng:-8.8900,place:"Playa das Naves (Illas Cíes)"},
-{t:"",lat:42.2360,lng:-8.8950,place:"Illas Cíes · porto"},
-{t:"",lat:42.2340,lng:-8.8920,place:"Illas Cíes · sendero do Faro"},
-{t:"",lat:42.2380,lng:-8.8880,place:"Illas Cíes · Praia da Madorra"},
-// --- relleno centro/afueras hasta 99 ---
-{t:"",lat:42.2374,lng:-8.7216,place:"Calle del Príncipe · metade da rúa"},
-{t:"",lat:42.2369,lng:-8.7224,place:"Rúa Urzáiz · preto da Farola"},
-{t:"",lat:42.2386,lng:-8.7208,place:"Rúa de Velázquez Moreno"},
-{t:"",lat:42.2388,lng:-8.7212,place:"Rúa de Cervantes"},
-{t:"",lat:42.2364,lng:-8.7222,place:"Rúa de Lalín"},
-{t:"",lat:42.2358,lng:-8.7232,place:"Rúa de Ourense"},
-{t:"",lat:42.2376,lng:-8.7240,place:"Rúa de Pontevedra"},
-{t:"",lat:42.2392,lng:-8.7188,place:"Avenida de Madrid"},
-{t:"",lat:42.2402,lng:-8.7172,place:"Avenida de Buenos Aires"},
-{t:"",lat:42.2345,lng:-8.7245,place:"Rúa de Rosalía · baixada ao porto"},
-{t:"",lat:42.2262,lng:-8.7180,place:"Barrio de A Franza / Teis baixo"},
-{t:"",lat:42.2170,lng:-8.7120,place:"Zona de Navia-Sur / hospital"},
-{t:"",lat:42.2432,lng:-8.7080,place:"Barrio de Eiriña"},
-{t:"",lat:42.2380,lng:-8.7050,place:"Barrio de Cruz Vermella"},
-{t:"",lat:42.2470,lng:-8.7180,place:"Monte de Castro · vertente norte"},
-{t:"",lat:42.2290,lng:-8.7250,place:"Rúa de Madrid · Cruceiro"},
-{t:"",lat:42.2335,lng:-8.7255,place:"Praza de Compostela · lado Areal"},
-{t:"",lat:42.2352,lng:-8.7218,place:"Rúa do Príncipe · cruce con Urzáiz"},
-{t:"",lat:42.2415,lng:-8.7120,place:"Barrio de A Gándara"},
-{t:"",lat:42.2240,lng:-8.7450,place:"Barrio de Candeán / Sárdoma alto"}
-].filter(Boolean);
-document.getElementById("poolCount").textContent=POOL.length;
+/* ===== BANCO =====
+   El banco ya NO va escrito a mano en el HTML: se carga de data.json, que
+   genera tools/build-bank.mjs a partir de Wikimedia Commons. La coordenada de
+   cada foto se extrae de la plantilla {{Location}} del propio fichero, asi que
+   la distancia se mide contra la posicion real de la camara y no contra un
+   punto inventado. Sin esa coordenada la foto no entra en el juego. */
+/* Banco de localizaciones incrustado en el propio HTML: cada entrada es
+   una foto de Wikimedia Commons con su COORDENADA REAL (extraida de la
+   plantilla {{Location}} de la ficha), su licencia y su autor.
+   Se incrusta en vez de descargarse para que index.html funcione solo. */
+const BANK=[{"f":"Cruceiro da Costa (Castrelos, Vigo).jpg","lat":42.211381,"lng":-8.723373,"place":"Cruceiro da Costa (Castrelos, Vigo)","w":6000,"h":4000,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Estevoaei"},{"f":"IFEVI.jpg","lat":42.222655,"lng":-8.637022,"place":"IFEVI","w":6000,"h":4000,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Bene Riobó"},{"f":"Gran Peña - Rápido de Bouzas, no Estadio Municipal de Barreiro 01.jpg","lat":42.228611,"lng":-8.680761,"place":"Gran Peña Rápido de Bouzas","w":6000,"h":4000,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Estevoaei"},{"f":"Ponte de Rande desde A Guía (Teis, Vigo).jpg","lat":42.259501,"lng":-8.701809,"place":"Ponte de Rande desde A Guía (Teis, Vigo)","w":6000,"h":4000,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Estevoaei"},{"f":"Placa no lavadoiro da Oliveira (Teis, Vigo).jpg","lat":42.25566,"lng":-8.695722,"place":"Placa no lavadoiro da Oliveira (Teis, Vigo)","w":6000,"h":4000,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Estevoaei"},{"f":"Centro comercial Bandeira, Vigo.jpg","lat":42.232314,"lng":-8.703133,"place":"Centro comercial Bandeira","w":6000,"h":4000,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Estevoaei"},{"f":"Mercado do Calvario, Vigo.jpg","lat":42.231101,"lng":-8.704189,"place":"Mercado do Calvario","w":6000,"h":4000,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Estevoaei"},{"f":"Cemiterio de Bouzas - capela.jpg","lat":42.213104,"lng":-8.753066,"place":"Cemiterio de Bouzas capela","w":6000,"h":4000,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Estevoaei"},{"f":"Escultura á muller traballadora no parque da Bouza (Vigo).jpg","lat":42.213583,"lng":-8.748644,"place":"Escultura á muller traballadora no parque da Bouza (Vigo)","w":6000,"h":4000,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Estevoaei"},{"f":"Hermitage of Nosa Señora da Guía, Vigo, Galicia, Spain (PPL3-Altered) julesvernex2.jpg","lat":42.256159,"lng":-8.702348,"place":"Hermitage of Nosa Señora da Guía","w":5839,"h":3970,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Jules Verne Times Two"},{"f":"Kaleido Universidade de Vigo R.C.- Campus Universitario Ourense RC - 11.jpg","lat":42.171921,"lng":-8.680162,"place":"Kaleido Universidade de Vigo R.C. Campus Universitario Ourense RC 11","w":5760,"h":3840,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Harpagornis"},{"f":"XXIII Memorial Quinocho (RC Celta vs Mainz 05) - 60.jpg","lat":42.211856,"lng":-8.739707,"place":"XXIII Memorial Quinocho (RC Celta vs Mainz 05) 60","w":5760,"h":3840,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Harpagornis"},{"f":"FC Coruxo vs CCD Cerceda - 21.jpg","lat":42.195946,"lng":-8.792055,"place":"FC Coruxo vs CCD Cerceda 21","w":5344,"h":3563,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Harpagornis"},{"f":"Vigo - panoramio (17).jpg","lat":42.231834,"lng":-8.718231,"place":"Avenida da Gran Vía","w":5184,"h":3456,"zone":"vigo","lic":"CC BY 3.0","author":"JCNazza"},{"f":"Vigo - panoramio (3).jpg","lat":42.235548,"lng":-8.719534,"place":"Vigo · 42.2355, -8.7195","w":5184,"h":3456,"zone":"vigo","lic":"CC BY 3.0","author":"JCNazza"},{"f":"Post relampagos - panoramio.jpg","lat":42.23179,"lng":-8.687525,"place":"Vigo · 42.2318, -8.6875","w":5182,"h":3455,"zone":"vigo","lic":"CC BY-SA 3.0","author":"joselomba"},{"f":"Puesta de Sol Cies - panoramio.jpg","lat":42.20808,"lng":-8.776716,"place":"Puesta de Sol Cies","w":5100,"h":3324,"zone":"vigo","lic":"CC BY-SA 3.0","author":"joselomba"},{"f":"Sobria y Serena (Jazmín Abuin y Arantxa Treus).jpg","lat":42.220105,"lng":-8.735807,"place":"Sobria y Serena (Jazmín Abuin y Arantxa Treus)","w":4724,"h":3543,"zone":"vigo","lic":"CC0","author":"Oaf.richyman"},{"f":"Tapa de rexistro ETEA Vigo.jpg","lat":42.25565,"lng":-8.69356,"place":"Tapa de rexistro ETEA Vigo","w":4185,"h":3919,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Estevoaei"},{"f":"Praia samil - panoramio.jpg","lat":42.219517,"lng":-8.776463,"place":"Praia samil","w":4608,"h":3456,"zone":"vigo","lic":"CC BY-SA 3.0","author":"Olga Gairin"},{"f":"Casco Viejo de la ciudad de Vigo, Rúa Oliva.jpg","lat":42.238123,"lng":-8.72648,"place":"Casco Viejo de la ciudad de Vigo, Rúa Oliva","w":4608,"h":3456,"zone":"vigo","lic":"CC BY-SA 4.0","author":"D.Rovchak"},{"f":"Casa de la Juventud - panoramio.jpg","lat":42.225628,"lng":-8.730573,"place":"Casa de la Juventud","w":4320,"h":3240,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Cruceiro familia y trabajo - panoramio.jpg","lat":42.220634,"lng":-8.733742,"place":"Cruceiro familia y trabajo","w":4320,"h":3240,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"O Perpetuo Socorro, Vigo, Pontevedra, Spain - panoramio (2).jpg","lat":42.219142,"lng":-8.734925,"place":"O Perpetuo Socorro, Vigo, Pontevedra, Spain","w":4320,"h":3240,"zone":"vigo","lic":"CC BY-SA 3.0","author":"Marcas Na Rede"},{"f":"Vigo (21141533251).jpg","lat":42.168102,"lng":-8.815612,"place":"Vigo · 42.1681, -8.8156","w":5400,"h":2512,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Contemplación 01.jpg","lat":42.217674,"lng":-8.753361,"place":"Contemplación 01","w":4252,"h":3161,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Riamar55"},{"f":"Campo das Relfas, Sárdoma.jpg","lat":42.206902,"lng":-8.708105,"place":"Campo das Relfas, Sárdoma","w":4160,"h":3120,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Estevoaei"},{"f":"Campo das Relfas, Sárdoma 2.jpg","lat":42.206528,"lng":-8.70872,"place":"Campo das Relfas, Sárdoma 2","w":4160,"h":3120,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Estevoaei"},{"f":"Biblioteca da Universidade de Vigo - Biblioteca da Facultade de Ciencias Xurídicas e do Traballo.jpg","lat":42.168865,"lng":-8.681215,"place":"Biblioteca da Universidade de Vigo Biblioteca da Facultade de Ciencias Xurídicas e do Traballo","w":4160,"h":3120,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Estevoaei"},{"f":"IES Ricardo Mella en Lavadores, Vigo.jpg","lat":42.217941,"lng":-8.679813,"place":"IES Ricardo Mella en Lavadores","w":4160,"h":3120,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Estevoaei"},{"f":"Educacón y TIC. Algo natural para nuestros hijas e hijos.jpg","lat":42.227192,"lng":-8.722525,"place":"Educacón y TIC. Algo natural para nuestros hijas e hijos","w":4160,"h":3120,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Luis Miguel González Fernández"},{"f":"Ponte de Sárdoma, río Lagares.jpg","lat":42.218964,"lng":-8.71576,"place":"Ponte de Sárdoma, río Lagares","w":4160,"h":3120,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Estevoaei"},{"f":"Ford Taunus en Vigo.jpg","lat":42.215378,"lng":-8.736285,"place":"Ford Taunus en Vigo","w":4160,"h":3120,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Estevoaei"},{"f":"Parque Barreiro, Vigo.jpg","lat":42.229244,"lng":-8.67946,"place":"Parque Barreiro","w":4160,"h":3120,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Estevoaei"},{"f":"Ría de Vigo dende O Castro.jpg","lat":42.232,"lng":-8.72625,"place":"Ría de Vigo dende O Castro","w":4128,"h":3096,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Teresafs"},{"f":"Universidad de Vigo - panoramio.jpg","lat":42.166537,"lng":-8.687245,"place":"Universidad de Vigo","w":4358,"h":2899,"zone":"vigo","lic":"CC BY-SA 3.0","author":"joselomba"},{"f":"Estreito de Rande.jpg","lat":42.252542,"lng":-8.687047,"place":"Estreito de Rande","w":4000,"h":3000,"zone":"vigo","lic":"CC BY-SA 3.0","author":"Vanbasten 23"},{"f":"Parque de bomberos de Teis-Vigo.jpg","lat":42.249186,"lng":-8.687094,"place":"Parque de bomberos de Teis Vigo","w":4000,"h":3000,"zone":"vigo","lic":"CC BY-SA 3.0","author":"Vanbasten 23"},{"f":"Monumento a los Galeones de Rande.jpg","lat":42.233585,"lng":-8.726597,"place":"Monumento a los Galeones de Rande","w":3968,"h":2976,"zone":"vigo","lic":"CC BY-SA 4.0","author":"CarlosVdeHabsburgo"},{"f":"Monumento a los Galeones de Rande 01.jpg","lat":42.231956,"lng":-8.72833,"place":"Monumento a los Galeones de Rande 01","w":3968,"h":2976,"zone":"vigo","lic":"CC BY-SA 4.0","author":"CarlosVdeHabsburgo"},{"f":"Vista de Vigo 02.jpg","lat":42.232525,"lng":-8.722728,"place":"Vigo · 42.2325, -8.7227","w":3968,"h":2976,"zone":"vigo","lic":"CC BY-SA 4.0","author":"CarlosVdeHabsburgo"},{"f":"Fortaleza del Castro de Vigo.jpg","lat":42.230824,"lng":-8.725641,"place":"Fortaleza del Castro de Vigo","w":3968,"h":2976,"zone":"vigo","lic":"CC BY-SA 4.0","author":"CarlosVdeHabsburgo"},{"f":"Conservatorio Superior de Música de Vigo.jpg","lat":42.230671,"lng":-8.721104,"place":"Conservatorio Superior de Música de Vigo","w":3968,"h":2976,"zone":"vigo","lic":"CC BY-SA 4.0","author":"CarlosVdeHabsburgo"},{"f":"Fortaleza del Castro de Vigo 05.jpg","lat":42.234898,"lng":-8.726367,"place":"Fortaleza del Castro de Vigo 05","w":3968,"h":2976,"zone":"vigo","lic":"CC BY-SA 4.0","author":"CarlosVdeHabsburgo"},{"f":"Fortaleza del Castro de Vigo 09.jpg","lat":42.232574,"lng":-8.726317,"place":"Fortaleza del Castro de Vigo 09","w":3968,"h":2976,"zone":"vigo","lic":"CC BY-SA 4.0","author":"CarlosVdeHabsburgo"},{"f":"Puerto de Vigo.jpg","lat":42.232773,"lng":-8.729336,"place":"Puerto de Vigo","w":3968,"h":2976,"zone":"vigo","lic":"CC BY-SA 4.0","author":"CarlosVdeHabsburgo"},{"f":"Museo del Mar y casas.jpg","lat":42.224888,"lng":-8.769314,"place":"Museo del Mar y casas","w":3968,"h":2976,"zone":"vigo","lic":"CC BY-SA 4.0","author":"CarlosVdeHabsburgo"},{"f":"Vista de Vigo.jpg","lat":42.236935,"lng":-8.728004,"place":"Vigo · 42.2369, -8.7280","w":3968,"h":2976,"zone":"vigo","lic":"CC BY-SA 4.0","author":"CarlosVdeHabsburgo"},{"f":"Vista de Vigo 01.jpg","lat":42.236385,"lng":-8.726007,"place":"Vigo · 42.2364, -8.7260","w":3968,"h":2976,"zone":"vigo","lic":"CC BY-SA 4.0","author":"CarlosVdeHabsburgo"},{"f":"Calle Rosalía de Castro.jpg","lat":42.238426,"lng":-8.723065,"place":"Calle Rosalía de Castro","w":3724,"h":2976,"zone":"vigo","lic":"CC BY-SA 4.0","author":"CarlosVdeHabsburgo"},{"f":"Placa IES Carlos Casares.jpg","lat":42.211472,"lng":-8.671833,"place":"Placa IES Carlos Casares","w":3843,"h":2730,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Estevoaei"},{"f":"Ferfenza de Eifonso - panoramio.jpg","lat":42.188974,"lng":-8.683641,"place":"Natureza","w":3906,"h":2602,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Ria de Vigo Cies Toralla y Violonchelo - panoramio.jpg","lat":42.171642,"lng":-8.735547,"place":"Ria de Vigo Cies Toralla y Violonchelo","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Vigo rodicio - panoramio.jpg","lat":42.190634,"lng":-8.683952,"place":"Bembrive","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Iglesia de beade - panoramio.jpg","lat":42.192201,"lng":-8.707159,"place":"Iglesia de beade","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Palomar sobre piedra - panoramio.jpg","lat":42.211234,"lng":-8.728613,"place":"Vigo · 42.2112, -8.7286","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Vigo fonte das amieiras - panoramio.jpg","lat":42.206627,"lng":-8.692433,"place":"Vigo fonte das amieiras","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Umbrella - panoramio (2).jpg","lat":42.204998,"lng":-8.778248,"place":"Playa","w":3888,"h":2592,"zone":"vigo","lic":"CC BY 3.0","author":"Tevfik Teker"},{"f":"Vigo Coast - panoramio.jpg","lat":42.215801,"lng":-8.776077,"place":"Playa · Vigo","w":3888,"h":2592,"zone":"vigo","lic":"CC BY 3.0","author":"Tevfik Teker"},{"f":"Exp 25 anos Policia Local de Vigo - 4402016334.jpg","lat":42.212984,"lng":-8.773623,"place":"Exp 25 anos Policia Local de Vigo 4402016334","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 2.0","author":"Contando Estrelas"},{"f":"Balaidos Rotonda con que será - panoramio.jpg","lat":42.213019,"lng":-8.738047,"place":"Vigo · 42.2130, -8.7380","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Vigo rotonda del bicentenario - panoramio.jpg","lat":42.234674,"lng":-8.725636,"place":"Vigo rotonda del bicentenario","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Avenida de Castelao Fuente - panoramio.jpg","lat":42.218837,"lng":-8.74357,"place":"Avenida de Castelao Fuente","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Auditorio Ria de Vigo estatua - panoramio.jpg","lat":42.231488,"lng":-8.734662,"place":"Auditorio Ria de Vigo estatua","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Fuente luminosa - panoramio.jpg","lat":42.225304,"lng":-8.721557,"place":"Fonte","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Plaza de America de noche - panoramio.jpg","lat":42.220745,"lng":-8.731905,"place":"Plaza de America de noche","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Puerta de entrada - panoramio.jpg","lat":42.214339,"lng":-8.732412,"place":"Vigo · 42.2143, -8.7324","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Glorieta Juan XXIII Vigo - panoramio.jpg","lat":42.227659,"lng":-8.734088,"place":"Glorieta Juan XXIII Vigo","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Rotonda con grua Vigo - panoramio.jpg","lat":42.226642,"lng":-8.737478,"place":"Rotonda con grua Vigo","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Vigo paseo de los peces pulpo - panoramio.jpg","lat":42.230817,"lng":-8.762932,"place":"Bouzas","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Vigo Bouzas paseo de los peces mejillones - panoramio.jpg","lat":42.231261,"lng":-8.762346,"place":"Bouzas","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Vigo paseo de los peces centollo - panoramio.jpg","lat":42.231894,"lng":-8.760588,"place":"Bouzas","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Vigo Bouzas paseo de los peces percebes - panoramio.jpg","lat":42.231498,"lng":-8.761621,"place":"Bouzas","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"VIGO,A MADROA - panoramio.jpg","lat":42.249004,"lng":-8.674335,"place":"Cygnus olor swimming (pairs in August)","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Paseo del Vao (17357544836).jpg","lat":42.196802,"lng":-8.792764,"place":"Paseo del Vao","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 2.0","author":"Lucas Martínez Farrapeira"},{"f":"Vistas al embalse con la ría y la ciudad al fondo - panoramio.jpg","lat":42.146287,"lng":-8.700145,"place":"Vistas al embalse con la ría y la ciudad al fondo","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"Lucas Martínez Farra…"},{"f":"Río Zamans, entre árboles - panoramio.jpg","lat":42.158468,"lng":-8.692819,"place":"Río Zamans, entre árboles","w":3888,"h":2592,"zone":"vigo","lic":"CC BY-SA 3.0","author":"Lucas Martínez Farra…"},{"f":"Playa de Samil - panoramio.jpg","lat":42.201595,"lng":-8.78305,"place":"Playa de Samil","w":3648,"h":2736,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Vigo, Castrelos, anfiteatro - panoramio.jpg","lat":42.213381,"lng":-8.729412,"place":"Parque de Castrelos","w":3648,"h":2736,"zone":"vigo","lic":"CC BY-SA 3.0","author":"Anxo Soto"},{"f":"Castro de Vigo-2.jpg","lat":42.232391,"lng":-8.727898,"place":"Castro de Vigo 2","w":3648,"h":2736,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Toatway"},{"f":"Rotonda exotica - panoramio.jpg","lat":42.246354,"lng":-8.66913,"place":"Rotonda exotica","w":3648,"h":2736,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Parque de a riouxa - panoramio.jpg","lat":42.256728,"lng":-8.682561,"place":"Parque de a riouxa","w":3648,"h":2736,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Horreo con granero - panoramio.jpg","lat":42.257502,"lng":-8.682168,"place":"Vigo · 42.2575, -8.6822","w":3648,"h":2736,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Al Sindicato de labradores - panoramio.jpg","lat":42.251303,"lng":-8.692783,"place":"Teis","w":3648,"h":2736,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Las gemelas - panoramio.jpg","lat":42.240062,"lng":-8.723347,"place":"Vigo · 42.2401, -8.7233","w":3648,"h":2736,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Bouzas rotonda - panoramio.jpg","lat":42.227636,"lng":-8.753754,"place":"Bouzas rotonda","w":3648,"h":2736,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Monumento a los Galeones de Rande (Vigo).jpg","lat":42.233803,"lng":-8.728519,"place":"Monumento a los Galeones de Rande (Vigo)","w":3968,"h":2476,"zone":"vigo","lic":"CC BY-SA 4.0","author":"CarlosVdeHabsburgo"},{"f":"A Manuél de Castro - panoramio.jpg","lat":42.212823,"lng":-8.740544,"place":"A Manuél de Castro","w":3733,"h":2589,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Fillas de Breogán - Torneo Reconquista 2024.jpg","lat":42.178482,"lng":-8.686705,"place":"Beade","w":3478,"h":2759,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Estevoaei"},{"f":"Plaza Puerta del Sol. Vigo.jpg","lat":42.238082,"lng":-8.725661,"place":"Plaza Puerta del Sol. Vigo","w":3968,"h":2232,"zone":"vigo","lic":"CC BY 3.0","author":"José Luis Filpo Cabana"},{"f":"Pousa Nova do Mar.JPG","lat":42.210282,"lng":-8.774353,"place":"Navia","w":3642,"h":2428,"zone":"vigo","lic":"CC BY-SA 3.0 es","author":"This image was taken by HombreDHojalata . talk Feel free to use my pho"},{"f":"El portal - panoramio.jpg","lat":42.228557,"lng":-8.716112,"place":"Vigo · 42.2286, -8.7161","w":3621,"h":2437,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"A Sede (Celta de Vigo).jpg","lat":42.236394,"lng":-8.722071,"place":"A Sede (Celta de Vigo)","w":3236,"h":2592,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Chairego apc"},{"f":"Plaza de Eugenio Fadrique - panoramio.jpg","lat":42.2242,"lng":-8.735536,"place":"Plaza de Eugenio Fadrique","w":3882,"h":2149,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Ya no suenan las campanas - panoramio.jpg","lat":42.235667,"lng":-8.728789,"place":"Igrexa · Vigo (city)","w":3840,"h":2160,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Escola Superior de Arte Dramática de Galicia.JPG","lat":42.208807,"lng":-8.759209,"place":"Escola Superior de Arte Dramática de Galicia","w":3481,"h":2321,"zone":"vigo","lic":"CC BY-SA 4.0","author":"HombreDHojalata"},{"f":"Capricho - panoramio.jpg","lat":42.229186,"lng":-8.715056,"place":"Vigo · 42.2292, -8.7151","w":3264,"h":2448,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Bouzas - panoramio - joselomba.jpg","lat":42.226106,"lng":-8.754162,"place":"Bouzas panoramio joselomba","w":3264,"h":2448,"zone":"vigo","lic":"CC BY-SA 3.0","author":"joselomba"},{"f":"Vigo puesta de sol - panoramio.jpg","lat":42.239384,"lng":-8.688126,"place":"Vigo puesta de sol","w":3264,"h":2448,"zone":"vigo","lic":"CC BY-SA 3.0","author":"joselomba"},{"f":"Vigo (20363117164).jpg","lat":42.221491,"lng":-8.774923,"place":"Vigo · 42.2215, -8.7749","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20363120594).jpg","lat":42.221775,"lng":-8.760978,"place":"Vigo · 42.2218, -8.7610","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20363091364).jpg","lat":42.204033,"lng":-8.778467,"place":"Vigo · 42.2040, -8.7785","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20363076034).jpg","lat":42.215033,"lng":-8.775484,"place":"Vigo · 42.2150, -8.7755","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20364614773).jpg","lat":42.21863,"lng":-8.776073,"place":"Vigo · 42.2186, -8.7761","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20364658793).jpg","lat":42.220119,"lng":-8.772781,"place":"Vigo · 42.2201, -8.7728","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20364644833).jpg","lat":42.220725,"lng":-8.775195,"place":"Vigo · 42.2207, -8.7752","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20364634523).jpg","lat":42.207436,"lng":-8.777017,"place":"Vigo · 42.2074, -8.7770","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20391601213).jpg","lat":42.223205,"lng":-8.759487,"place":"Vigo · 42.2232, -8.7595","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20416607914).jpg","lat":42.186997,"lng":-8.815625,"place":"Vigo · 42.1870, -8.8156","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20446941354).jpg","lat":42.186486,"lng":-8.814339,"place":"Vigo · 42.1865, -8.8143","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20522917924).jpg","lat":42.212169,"lng":-8.731676,"place":"Vigo · 42.2122, -8.7317","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20524555283).jpg","lat":42.213225,"lng":-8.728626,"place":"Vigo · 42.2132, -8.7286","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20524563553).jpg","lat":42.2137,"lng":-8.727448,"place":"Vigo · 42.2137, -8.7274","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20523240754).jpg","lat":42.219294,"lng":-8.719664,"place":"Vigo · 42.2193, -8.7197","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20797638950).jpg","lat":42.205688,"lng":-8.77782,"place":"Vigo · 42.2057, -8.7778","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20882547859).jpg","lat":42.188155,"lng":-8.753159,"place":"Vigo · 42.1882, -8.7532","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20882960889).jpg","lat":42.172897,"lng":-8.740823,"place":"Vigo · 42.1729, -8.7408","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20946932739).jpg","lat":42.167224,"lng":-8.818039,"place":"Vigo · 42.1672, -8.8180","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20985689895).jpg","lat":42.217308,"lng":-8.776334,"place":"Vigo · 42.2173, -8.7763","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (20993167031).jpg","lat":42.224425,"lng":-8.770159,"place":"Vigo · 42.2244, -8.7702","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (21014453345).jpg","lat":42.223191,"lng":-8.758228,"place":"Vigo · 42.2232, -8.7582","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (21004551692).jpg","lat":42.225883,"lng":-8.76065,"place":"Vigo · 42.2259, -8.7607","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (21004551602).jpg","lat":42.227416,"lng":-8.760798,"place":"Vigo · 42.2274, -8.7608","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (21029323202).jpg","lat":42.191022,"lng":-8.804795,"place":"Vigo · 42.1910, -8.8048","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (21043583616).jpg","lat":42.186619,"lng":-8.754159,"place":"Vigo · 42.1866, -8.7542","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (21059333132).jpg","lat":42.182594,"lng":-8.741978,"place":"Vigo · 42.1826, -8.7420","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (21078102081).jpg","lat":42.170647,"lng":-8.73507,"place":"Vigo · 42.1706, -8.7351","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (21131016995).jpg","lat":42.221875,"lng":-8.774278,"place":"Vigo · 42.2219, -8.7743","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (21120861802).jpg","lat":42.201947,"lng":-8.782267,"place":"Vigo · 42.2019, -8.7823","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (21120879672).jpg","lat":42.192222,"lng":-8.801642,"place":"Vigo · 42.1922, -8.8016","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (21141525481).jpg","lat":42.167733,"lng":-8.816984,"place":"Vigo · 42.1677, -8.8170","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (21152275941).jpg","lat":42.255558,"lng":-8.701981,"place":"Vigo · 42.2556, -8.7020","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (21188443892).jpg","lat":42.229436,"lng":-8.746842,"place":"Vigo · 42.2294, -8.7468","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (21206686281).jpg","lat":42.230208,"lng":-8.745198,"place":"Vigo · 42.2302, -8.7452","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Vigo (21206720501).jpg","lat":42.220997,"lng":-8.764106,"place":"Vigo · 42.2210, -8.7641","w":3264,"h":2448,"zone":"vigo","lic":"CC BY 2.0","author":"Sergei Gussev"},{"f":"Arte urbano - panoramio (1).jpg","lat":42.237269,"lng":-8.723858,"place":"Vigo · 42.2373, -8.7239","w":3744,"h":2104,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Cruceiro en bouzas - panoramio.jpg","lat":42.224379,"lng":-8.750269,"place":"Cruceiro en bouzas","w":3744,"h":2104,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Auditorio Ria de Vigo - panoramio.jpg","lat":42.231091,"lng":-8.735408,"place":"Auditorio Ria de Vigo","w":3120,"h":2360,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Vigo Castrelos Ranita - panoramio.jpg","lat":42.212009,"lng":-8.730738,"place":"Vigo Castrelos Ranita","w":3072,"h":2304,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Veleros en la Ria de Vigo - panoramio.jpg","lat":42.237021,"lng":-8.72676,"place":"Veleros en la Ria de Vigo","w":3072,"h":2304,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Praia do Adro, Bouzas, Vigo.jpg","lat":42.226694,"lng":-8.753952,"place":"Praia do Adro, Bouzas","w":3641,"h":1880,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Vigo, Castrelos 01-26a.jpg","lat":42.210539,"lng":-8.726161,"place":"Castrelos","w":3088,"h":2056,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Lameiro"},{"f":"Vigo, Coruxo 01-05b.jpg","lat":42.18852,"lng":-8.77663,"place":"Church of San Salvador de Coruxo","w":3088,"h":2056,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Lameiro"},{"f":"Vigo, Museo Mar 02-04b.jpg","lat":42.223394,"lng":-8.77018,"place":"Vigo · 42.2234, -8.7702","w":3088,"h":2056,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Lameiro"},{"f":"Vigo, modillóns 01.jpg","lat":42.238944,"lng":-8.716658,"place":"Vigo · 42.2389, -8.7167","w":3088,"h":2056,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Lameiro"},{"f":"Vigo, Salinas 03-14a.jpg","lat":42.238142,"lng":-8.717378,"place":"Vigo · 42.2381, -8.7174","w":3088,"h":2056,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Lameiro"},{"f":"Fábrica Santa Clara Vigo.jpg","lat":42.224654,"lng":-8.67477,"place":"Fábrica Santa Clara Vigo","w":3264,"h":1836,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Estevoaei"},{"f":"Ría de Vigo en Galicia - Tormenta sobre las islas Cíes y San Martiño - panoramio.jpg","lat":42.20131,"lng":-8.781853,"place":"Ría de Vigo en Galicia Tormenta sobre las islas Cíes y San Martiño","w":2816,"h":2112,"zone":"vigo","lic":"CC BY-SA 3.0","author":"LANOEL"},{"f":"Magnolios en primavera - panoramio.jpg","lat":42.220159,"lng":-8.729582,"place":"Natureza","w":2560,"h":1920,"zone":"vigo","lic":"CC BY-SA 3.0","author":"Miguel Iglesias"},{"f":"Casa Camoens.jpg","lat":42.239271,"lng":-8.726626,"place":"Casa Camoens","w":2560,"h":1920,"zone":"vigo","lic":"CC BY-SA 3.0","author":"Álvaro Rodríguez Resino"},{"f":"Pereira de Castro Fachada Rúa Triunfo 03.jpg","lat":42.238779,"lng":-8.726251,"place":"Pereira de Castro Fachada Rúa Triunfo 03","w":2560,"h":1920,"zone":"vigo","lic":"CC BY-SA 3.0","author":"Álvaro Rodríguez Resino"},{"f":"Barriño meu - panoramio.jpg","lat":42.170667,"lng":-8.784667,"place":"Natureza","w":2425,"h":1832,"zone":"vigo","lic":"CC BY 3.0","author":"Jonatan MV"},{"f":"Trio de ranas - panoramio.jpg","lat":42.230748,"lng":-8.731988,"place":"Natureza","w":2260,"h":1701,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Isla de Toraya - panoramio.jpg","lat":42.181946,"lng":-8.778677,"place":"Isla de Toraya","w":2210,"h":1658,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Mareas Vivas - panoramio.jpg","lat":42.197908,"lng":-8.793716,"place":"Playa · Vigo","w":2448,"h":1400,"zone":"vigo","lic":"CC BY 3.0","author":"Jonatan MV"},{"f":"Vigo puente romano - panoramio.jpg","lat":42.212048,"lng":-8.733947,"place":"Vigo · 42.2120, -8.7339","w":2048,"h":1536,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Realizacion figura de arena - panoramio.jpg","lat":42.211594,"lng":-8.77533,"place":"Playa · Vigo","w":2048,"h":1536,"zone":"vigo","lic":"CC BY-SA 3.0","author":"cacahuete"},{"f":"Rúa do Conde de Torrecedeira (Vigo).jpg","lat":42.233399,"lng":-8.731627,"place":"Rúa do Conde de Torrecedeira (Vigo)","w":1944,"h":1458,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Chairego apc"},{"f":"Where My Friend Sleeps (160745901).jpeg","lat":42.225355,"lng":-8.738004,"place":"Vigo · 42.2254, -8.7380","w":2048,"h":1365,"zone":"vigo","lic":"CC BY 3.0","author":"Gonzalo Pérez"},{"f":"O Ceo énchese De Luz (42097530).jpeg","lat":42.230069,"lng":-8.755001,"place":"Bouzas","w":2001,"h":1392,"zone":"vigo","lic":"CC BY-SA 3.0","author":"Germán"},{"f":"Un coche de la Policía Local de Vigo impidiendo el acceso a la Avenida de Florida, a causa de un incendio.jpg","lat":42.207334,"lng":-8.751168,"place":"A Florida, Coia","w":2000,"h":1333,"zone":"vigo","lic":"CC BY-SA 2.0","author":"Contando Estrelas"},{"f":"Fogueira de San Xoán en Vigo - 4729098760.jpg","lat":42.252901,"lng":-8.701064,"place":"Fogueira de San Xoán en Vigo 4729098760","w":2000,"h":1333,"zone":"vigo","lic":"CC BY-SA 2.0","author":"Contando Estrelas"},{"f":"Rotonda A Laxe - panoramio.jpg","lat":42.240206,"lng":-8.726955,"place":"Rotonda A Laxe","w":2000,"h":1330,"zone":"vigo","lic":"CC BY-SA 3.0","author":"joselomba"},{"f":"Pazo da Pastora.jpg","lat":42.21931,"lng":-8.727347,"place":"Pazo da Pastora","w":2022,"h":1136,"zone":"vigo","lic":"CC BY-SA 4.0","author":"Fotopaisaje"},{"f":"Fundación Eusenio, Rúa México, Vigo.jpg","lat":42.231761,"lng":-8.716201,"place":"Fundación Eusenio, Rúa México","w":1627,"h":1282,"zone":"vigo","lic":"CC BY-SA 4.0","author":"This image was taken by HombreDHojalata . talk Feel free to use my pho"},{"f":"Plaza Eliptica Vigo - panoramio.jpg","lat":42.231214,"lng":-8.720521,"place":"Plaza Eliptica Vigo","w":1560,"h":1170,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Isla de Toralla - panoramio.jpg","lat":42.193552,"lng":-8.797131,"place":"Isla de Toralla","w":1537,"h":1153,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Bouzas - panoramio.jpg","lat":42.225463,"lng":-8.752584,"place":"Bouzas","w":1533,"h":1150,"zone":"vigo","lic":"CC BY-SA 3.0","author":"farrangallo"},{"f":"Árbol (34191392).jpeg","lat":42.158044,"lng":-8.687566,"place":"Natureza","w":1600,"h":1063,"zone":"vigo","lic":"CC BY-SA 3.0","author":"Germán"},{"f":"Estanque De Castrelos Castrelos Pond (34366964).jpeg","lat":42.20678,"lng":-8.72334,"place":"Estanque De Castrelos Castrelos Pond","w":1600,"h":1060,"zone":"vigo","lic":"CC BY-SA 3.0","author":"Germán"}];
+let POOL=[];
+async function loadPool(){
+  const chip=$("poolCount"),solo=$("soloBtn");
+  chip.textContent="cargando…";solo.disabled=true;
+  try{
+    POOL=(BANK||[]).map(x=>({t:x.f,lat:x.lat,lng:x.lng,place:x.place||"Vigo",w:x.w,h:x.h,lic:x.lic||"Wikimedia Commons",author:x.author||""}));
+    if(!POOL.length)throw new Error("banco vacio");
+  }catch(e){
+    chip.textContent="no se pudo cargar el banco";
+    setOnline("Error al cargar el banco: "+e.message,"err");
+    return;
+  }
+  chip.textContent=POOL.length;
+  const allOpt=$("rounds").querySelector('option[value="all"]');
+  allOpt.value=String(POOL.length);
+  allOpt.textContent="Todas ("+POOL.length+")";
+  allOpt.disabled=POOL.length<=30;
+  [...$("rounds").options].forEach(o=>{
+    if(o.value==="all")return;
+    const n=+o.value;
+    o.disabled=n>POOL.length;
+    o.textContent=o.disabled?n+" · no disponible":String(n);
+  });
+  solo.disabled=false;
+}
 
 /* ===== Utilidades ===== */
 function haversine(a,b,c,d){const R=6371000,r=x=>x*Math.PI/180,dLa=r(c-a),dLo=r(d-b),h=Math.sin(dLa/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(h));}
-const calcScore=m=>Math.max(0,Math.round(5000*Math.exp(-(m/1000)/1.5)));
+// Puntuacion: 5000 planos dentro de 50 m y caida exponencial a partir de ahi.
+// La constante sigma depende de la dificultad: asi 1 km no vale casi nada en
+// modo dificil, que es donde el mapa esta mas alejado.
+function calcScore(m,sigma){if(m<=50)return 5000;return Math.max(0,Math.round(5000*Math.exp(-(m-50)/(sigma||1200))));}
 const fmtDist=m=>m<1000?`${Math.round(m)} m`:`${(m/1000).toFixed(2)} km`;
 function mulberry32(a){return function(){a|=0;a=a+0x6d2b79f5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 function shuffled(arr,rng){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-function buildOrder(seed,n){const rng=mulberry32(seed);return shuffled(POOL.map((_,i)=>i),rng).slice(0,Math.min(n,POOL.length));}
-const DIFF={f:{sec:120,zoom:14},n:{sec:60,zoom:13},v:{sec:30,zoom:12}};
+// Baraja con semilla y, encima, exige que dos rondas no caigan practicamente
+// en el mismo punto: por debajo de minSep los metros son ruido de cuantizacion
+// del mapa, no una diferencia real de punteria.
+function buildOrder(seed,n,minSep){
+  const idx=shuffled(POOL.map((_,i)=>i),mulberry32(seed));
+  const total=POOL.length;
+  const sep=(n>=total*0.4)?0:(minSep||300);
+  const out=[];
+  for(const i of idx){
+    if(out.length>=n)break;
+    const a=POOL[i];
+    if(sep&&out.some(j=>haversine(POOL[j].lat,POOL[j].lng,a.lat,a.lng)<sep))continue;
+    out.push(i);
+  }
+  for(const i of idx){if(out.length>=n)break;if(out.indexOf(i)<0)out.push(i);}
+  return out;
+}
+const DIFF={
+  f:{sec:120,zoom:14,sigma:400,hit:200,minSep:250},
+  n:{sec:60, zoom:13,sigma:1100,hit:120,minSep:300},
+  v:{sec:30, zoom:12,sigma:2800,hit:80, minSep:450}
+};
 const CENTER=[42.2375,-8.7225];
 
 /* ===== Estado ===== */
@@ -439,13 +389,21 @@ function updScore(){const r=S.online?` · ${S.remote||"Rival"}: ${S.rivalScore}`
 /* ===== Mapa ===== */
 function ensureMap(){
   if(map)return;
-  map=L.map("map",{zoomControl:true,attributionControl:true,maxBounds:L.latLngBounds([[42.16,-8.83],[42.32,-8.58]]),minZoom:10,maxZoom:18}).setView(CENTER,S.settings.zoom);
+  map=L.map("map",{zoomControl:true,attributionControl:true,maxBounds:L.latLngBounds([[42.14,-8.93],[42.34,-8.56]]),minZoom:9,maxZoom:18}).setView(CENTER,S.settings.zoom);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
   map.on("click",onMapClick);
   window.addEventListener("resize",()=>map&&map.invalidateSize());
 }
 function clearLayers(){[gMk,oMk,rMk,gLine,rLine].forEach(l=>l&&map&&map.removeLayer(l));gMk=oMk=rMk=gLine=rLine=null;}
 function icon(cls){return L.divIcon({className:"",html:`<div class="mk ${cls}"><i></i></div>`,iconSize:[20,20],iconAnchor:[10,10]});}
+// Vista inicial de cada ronda: el centro del municipio, salvo que el sitio
+// real este tan lejos (Cíes) que haya que abrir el mapa para que sea alcanzable.
+function setRoundView(it){
+  if(!map||!it)return;
+  const d=haversine(CENTER[0],CENTER[1],it.lat,it.lng);
+  if(d>5000){try{map.fitBounds(L.latLngBounds([CENTER,[it.lat,it.lng]]),{padding:[25,25],maxZoom:S.settings.zoom});}catch(e){map.setView(CENTER,S.settings.zoom);}}
+  else map.setView(CENTER,S.settings.zoom);
+}
 function onMapClick(e){if(S.locked)return;guess=e.latlng;if(gMk)map.removeLayer(gMk);gMk=L.marker(e.latlng,{icon:icon("mk-you")}).addTo(map);$("confirmBtn").disabled=false;$("mapSub").textContent=`${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;$("guessHint").textContent="¿Seguro? Pulsa Confirmar.";}
 
 /* ===== Zoom/pan foto ===== */
@@ -476,23 +434,37 @@ function renderRound(){
   $("legRival").style.display=S.online?"inline":"none";
   const img=$("photoImg"),ld=$("photoLoading"),ni=$("noImg");
   img.classList.remove("ready");ni.classList.remove("show");
-  if(!it.t){ // sin imagen declarada -> modo "adivina por el lugar"? no: siempre hay place, mostramos fallback directo
-    ld.style.display="none";ni.classList.add("show");$("noImgName").textContent=it.place;
-    $("confirmBtn").disabled=true;$("nextBtn").disabled=false; // puede saltar o marcar
+  if(!it.t){
+    // La foto no se pudo cargar: NO se muestra el nombre del sitio (seria la
+    // respuesta) y se permite marcar igualmente para puntuar la distancia.
+    ld.style.display="none";ni.classList.add("show");$("noImgName").textContent="Foto no disponible";
+    $("nextBtn").disabled=false;
   }else{
     ld.style.display="grid";
     let fb=false;
     img.onload=()=>{img.classList.add("ready");ld.style.display="none";};
-    img.onerror=()=>{if(!fb){fb=true;img.src=fp(it.t).split("?")[0];return;}ld.style.display="none";ni.classList.add("show");$("noImgName").textContent=it.place;$("nextBtn").disabled=false;};
+    img.onerror=()=>{if(!fb){fb=true;img.src=fp(it.t).split("?")[0];return;}ld.style.display="none";ni.classList.add("show");$("noImgName").textContent="Foto no disponible";$("nextBtn").disabled=false;};
     img.src=fp(it.t);
   }
-  if(map){map.invalidateSize();map.setView(CENTER,S.settings.zoom);map.off("click",onMapClick);map.on("click",onMapClick);}
+  if(map){map.invalidateSize();map.off("click",onMapClick);map.on("click",onMapClick);setRoundView(it);}
   startTimer(S.settings.sec);
 }
 function startTimer(sec){S.timeLeft=sec;const bar=$("timerBar");bar.style.width="100%";$("timerBox").classList.remove("low");S.timer=setInterval(()=>{S.timeLeft--;bar.style.width=`${Math.max(0,S.timeLeft/sec)*100}%`;if(S.timeLeft<=8)$("timerBox").classList.add("low");if(S.timeLeft<=0){stopTimer();timeout();}},1000);}
 function stopTimer(){if(S.timer){clearInterval(S.timer);S.timer=null;}}
-function timeout(){if(S.locked)return;S.locked=true;if(map)map.off("click",onMapClick);S.doneLocal=true;S.results.local=null;tryReveal();}
-function confirm(){if(!guess||S.locked)return;S.locked=true;if(map)map.off("click",onMapClick);const it=cur();const d=haversine(guess.lat,guess.lng,it.lat,it.lng);const sc=calcScore(d);S.doneLocal=true;S.results.local={dist:d,score:sc,lat:guess.lat,lng:guess.lng};if(S.online)send({type:"result",round:S.round,dist:d,score:sc,lat:guess.lat,lng:guess.lng});tryReveal();}
+// Al agotarse el tiempo se conserva la marca que ya habia puesto el jugador
+// (no vale la pena tirar una marca) y se avisa al rival, que si no se queda
+// esperando un resultado que nunca llega y la partida se cuelga.
+function timeout(){
+  if(S.locked)return;
+  S.locked=true;if(map)map.off("click",onMapClick);
+  const it=cur();
+  let loc=null;
+  if(guess){const d=haversine(guess.lat,guess.lng,it.lat,it.lng);loc={dist:d,score:calcScore(d,S.settings.sigma),lat:guess.lat,lng:guess.lng};}
+  S.doneLocal=true;S.results.local=loc;
+  if(S.online)send({type:"result",round:S.round,timeout:!loc,dist:loc?loc.dist:0,score:loc?loc.score:0,lat:loc?loc.lat:null,lng:loc?loc.lng:null});
+  tryReveal();
+}
+function confirm(){if(!guess||S.locked)return;S.locked=true;if(map)map.off("click",onMapClick);const it=cur();const d=haversine(guess.lat,guess.lng,it.lat,it.lng);const sc=calcScore(d,S.settings.sigma);S.doneLocal=true;S.results.local={dist:d,score:sc,lat:guess.lat,lng:guess.lng};if(S.online)send({type:"result",round:S.round,dist:d,score:sc,lat:guess.lat,lng:guess.lng});tryReveal();}
 function tryReveal(){
   if(S.revealed)return;
   if(S.online){ if(!(S.doneLocal&&S.doneRemote))return; }
@@ -509,12 +481,13 @@ function reveal(){
   const pts=[[it.lat,it.lng]];if(loc)pts.push([loc.lat,loc.lng]);if(rem&&rem.lat!=null)pts.push([rem.lat,rem.lng]);
   map.fitBounds(L.latLngBounds(pts).pad(0.4));
   const sc=loc?loc.score:0;
-  S.score+=sc;S.rows.push({t:it.t,place:it.place,dist:loc?loc.dist:null,score:sc,skip:!loc});
-  if(sc>0){S.correct++;S.best=Math.max(S.best,sc);}
+  S.score+=sc;S.rows.push({t:it.t,place:it.place,dist:loc?loc.dist:null,score:sc,skip:!loc,author:it.author,lic:it.lic});
+  if(loc&&loc.dist<=S.settings.hit){S.correct++;}   // "acierto" = dentro del umbral de la dificultad
+  S.best=Math.max(S.best,sc);
   const el=$("scoreNum");el.textContent=S.score;el.classList.remove("bump");void el.offsetWidth;el.classList.add("bump");
   $("progBar").style.width=`${((S.round+1)/S.order.length)*100}%`;
   const rb=$("revealBadge");
-  rb.innerHTML=`<div class="rb-place">${it.place}</div><div class="rb-dist">${!loc?"Tiempo agotado · 0 pts":`${fmtDist(loc.dist)} · <b>+${sc}</b> pts`}</div>`;
+  rb.innerHTML=`<div class="rb-place">${it.place}</div><div class="rb-dist">${!loc?"Tiempo agotado · 0 pts":`${fmtDist(loc.dist)} · <b>+${sc}</b> pts`}</div>`+`<div class="rb-credit">Foto: ${it.author||"Wikimedia Commons"} · ${it.lic||"Wikimedia Commons"}</div>`;
   rb.classList.add("show");
   const hostTurn=!S.online||S.isHost;
   $("nextBtn").disabled=!hostTurn;
@@ -539,16 +512,27 @@ function finish(){
   const tb=$("resBody");tb.innerHTML="";
   S.rows.forEach((r,i)=>{const tr=document.createElement("tr");
     const ph=r.t?`<img loading="lazy" src="${fp(r.t)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'nop',textContent:'📍'}))">`:`<div class="nop">📍</div>`;
-    tr.innerHTML=`<td class="ph">${ph}</td><td>${i+1}. ${r.place}</td><td class="num ${r.skip?'tag-skip':r.dist<300?'tag-ok':'tag-bad'}">${r.skip?"—":fmtDist(r.dist)}</td><td class="num">${r.score}</td>`;tb.appendChild(tr);});
+    const cred=`<div class="credit">${r.author||"Wikimedia Commons"} · ${r.lic||"Wikimedia Commons"}</div>`;
+    tr.innerHTML=`<td class="ph">${ph}</td><td>${i+1}. ${r.place}${cred}</td><td class="num ${r.skip?'tag-skip':r.dist<S.settings.hit?'tag-ok':'tag-bad'}">${r.skip?"—":fmtDist(r.dist)}</td><td class="num">${r.score}</td>`;tb.appendChild(tr);});
+  const rec=Number(localStorage.getItem("vg_best")||0);
+  if(rec>0)$("resSub").textContent=($("resSub").textContent?$("resSub").textContent+" · ":"")+"Tu record: "+rec+" pts";
   saveBest();
 }
 function saveBest(){try{const b=Number(localStorage.getItem("vg_best")||0);if(S.score>b)localStorage.setItem("vg_best",String(S.score));}catch(e){}}
 
 /* ===== Inicio ===== */
 function resetMatch(){S.round=0;S.score=0;S.rivalScore=0;S.correct=0;S.best=0;S.rows=[];S.results={local:null,remote:null};S.doneLocal=false;S.doneRemote=false;}
-function startSolo(){closeOnline(false);S.online=false;S.remote="";const d=DIFF[$("diff").value]||DIFF.n;S.settings={rounds:+$("rounds").value,sec:d.sec,zoom:d.zoom};S.order=buildOrder(Math.floor(Math.random()*1e9),S.settings.rounds);resetMatch();show("game");ensureMap();renderRound();}
-function applyStart(dd){S.online=true;const d=DIFF[dd.diff]||DIFF.n;S.settings={rounds:+dd.rounds||8,sec:d.sec,zoom:d.zoom};S.order=buildOrder(+dd.seed,S.settings.rounds);if(!S.isHost)S.remote=dd.hostName||"Anfitrión";resetMatch();show("game");ensureMap();renderRound();}
-function startMatch(){if(!S.conn||!S.conn.open){setOnline("No hay rival conectado.","err");return;}const d=DIFF[$("diff").value]||DIFF.n;S.settings={rounds:+$("rounds").value,sec:d.sec,zoom:d.zoom};const seed=Math.floor(Math.random()*1e9);S.order=buildOrder(seed,S.settings.rounds);const dd={type:"start",seed,rounds:S.settings.rounds,diff:$("diff").value,hostName:nick()};send(dd);S.isHost=true;applyStart(dd);}
+function roundsWanted(){const v=$("rounds").value;return v==="all"?POOL.length:Math.min(+v,POOL.length);}
+function startSolo(){
+  if(!POOL.length){setOnline("El banco de fotos no esta cargado todavia.","err");return;}
+  closeOnline(false);S.online=false;S.remote="";
+  const d=DIFF[$("diff").value]||DIFF.n;
+  S.settings={rounds:roundsWanted(),sec:d.sec,zoom:d.zoom,sigma:d.sigma,hit:d.hit,minSep:d.minSep};
+  S.order=buildOrder(Math.floor(Math.random()*1e9),S.settings.rounds,d.minSep);
+  resetMatch();show("game");ensureMap();renderRound();
+}
+function applyStart(dd){S.online=true;const d=DIFF[dd.diff]||DIFF.n;S.settings={rounds:+dd.rounds||8,sec:d.sec,zoom:d.zoom,sigma:d.sigma,hit:d.hit,minSep:d.minSep};S.order=buildOrder(+dd.seed,S.settings.rounds,d.minSep);if(!S.isHost)S.remote=dd.hostName||"Anfitrión";resetMatch();show("game");ensureMap();renderRound();}
+function startMatch(){if(!S.conn||!S.conn.open){setOnline("No hay rival conectado.","err");return;}if(!POOL.length){setOnline("El banco de fotos no esta cargado todavia.","err");return;}const d=DIFF[$("diff").value]||DIFF.n;S.settings={rounds:roundsWanted(),sec:d.sec,zoom:d.zoom,sigma:d.sigma,hit:d.hit,minSep:d.minSep};const seed=Math.floor(Math.random()*1e9);S.order=buildOrder(seed,S.settings.rounds,d.minSep);const dd={type:"start",seed,rounds:S.settings.rounds,diff:$("diff").value,hostName:nick()};send(dd);S.isHost=true;applyStart(dd);}
 
 /* ===== Online ===== */
 function setOnline(m,cls){$("onlineStatus").textContent=m;$("onlineStatus").className="status"+(cls?" "+cls:"");}
@@ -557,7 +541,7 @@ function bindConn(){S.conn.on("data",onData);S.conn.on("close",()=>setOnline("Co
 function onData(d){if(!d||!d.type)return;
   if(d.type==="hello"){if(S.isHost){S.remote=d.name||"Rival";setOnline(`Rival conectado: ${S.remote}`,"ok");$("startMatchBtn").disabled=false;}return;}
   if(d.type==="start"){if(!S.isHost)applyStart(d);return;}
-  if(d.type==="result"){if(d.round!==S.round)return;S.doneRemote=true;S.results.remote={lat:d.lat,lng:d.lng,dist:d.dist,score:d.score};S.rivalScore+=d.score;updScore();if(S.locked)tryReveal();else $("guessHint").textContent=`${S.remote} ya confirmó. Marca y confirma tú.`;return;}
+  if(d.type==="result"){if(d.round!==S.round)return;S.doneRemote=true;S.results.remote=d.timeout?null:{lat:d.lat,lng:d.lng,dist:d.dist,score:d.score};S.rivalScore+=d.score||0;updScore();if(S.locked)tryReveal();else $("guessHint").textContent=`${S.remote} ya confirmó. Marca y confirma tú.`;return;}
   if(d.type==="next"){if(!S.isHost){S.round=+d.round||0;renderRound();}return;}
   if(d.type==="end"){if(!S.isHost)finish();return;}
 }
@@ -568,6 +552,7 @@ function host(at=0){closeOnline(false);if(at>4){setOnline("No se pudo crear sala
 function join(){const c=($("roomInput").value||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,8);if(!c){setOnline("Introduce un código.","err");return;}closeOnline(false);S.online=true;S.isHost=false;S.room=c;setOnline(`Conectando a ${c}…`);$("leaveBtn").style.display="block";S.peer=new Peer();S.peer.on("open",()=>{const cn=S.peer.connect(peerId(c),{reliable:true});S.conn=cn;bindConn();cn.on("open",()=>{send({type:"hello",name:nick()});setOnline(`Conectado a ${c}. Esperando al anfitrión.`,"ok");});});S.peer.on("error",e=>setOnline(`Error: ${e&&e.type||"?"}${e&&e.type==="peer-unavailable"?" (revisa el código)":""}`,"err"));}
 
 /* ===== Botones ===== */
+loadPool();
 $("soloBtn").onclick=startSolo;
 $("createBtn").onclick=()=>host(0);
 $("joinBtn").onclick=join;
