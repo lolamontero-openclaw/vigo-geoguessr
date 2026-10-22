@@ -1,1332 +1,479 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>VigoGuessr · GeoGuessr de Vigo</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>VigoGuessr · GeoGuessr de Vigo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<style>
+:root{
+  --bg:#0b0d12; --surface:#13161e; --surface2:#1a1e29; --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+  --text:#eef1f6; --muted:#9aa3b2; --muted2:#6b7280;
+  --accent:#f5a623; --accent-d:#d98a0e; --accent-soft:rgba(245,166,35,.14);
+  --good:#34d399; --bad:#f87171; --info:#60a5fa; --rival:#fbbf24;
+  --r-lg:20px; --r-md:14px; --r-sm:10px;
+  --ease:cubic-bezier(.2,.7,.2,1); --shadow:0 24px 60px -20px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+button{font-family:inherit}
+.screen{display:none;height:100%;width:100%}
+.screen.active{display:block}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#2a3142;border-radius:99px}
+::-webkit-scrollbar-track{background:transparent}
 
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""
-  />
+/* ---------- LOBBY ---------- */
+#lobby{overflow:auto}
+.bg-deco{position:fixed;inset:0;z-index:0;background:
+  radial-gradient(900px 520px at 82% -12%,rgba(245,166,35,.10),transparent 60%),
+  radial-gradient(760px 520px at -12% 112%,rgba(96,165,250,.08),transparent 60%),var(--bg)}
+.lobby-inner{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:clamp(20px,5vw,56px)}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(160deg,var(--accent),var(--accent-d));color:#1a1206;font-weight:900;font-size:25px;box-shadow:0 10px 26px -10px rgba(245,166,35,.6)}
+.brand h1{margin:0;font-size:clamp(1.7rem,4.5vw,2.5rem);font-weight:900;letter-spacing:-.03em}
+.tagline{color:var(--muted);margin:3px 0 0;font-size:.98rem}
+.pool-chip{display:inline-flex;align-items:center;gap:9px;margin-top:16px;padding:9px 15px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--muted);font-size:.86rem;font-weight:600}
+.pool-chip b{color:var(--accent)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 4px rgba(52,211,153,.18)}
+.dot.load{background:var(--accent);animation:blink 1s infinite}
+.dot.err{background:var(--bad);box-shadow:0 0 0 4px rgba(248,113,113,.18)}
+@keyframes blink{50%{opacity:.3}}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin-top:30px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:24px;box-shadow:var(--shadow)}
+.card h2{margin:0 0 4px;font-size:1.22rem;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+.card h2 .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--surface2);font-size:16px}
+.card p.desc{color:var(--muted);margin:0 0 18px;font-size:.92rem;line-height:1.55}
+.field{display:block;margin-bottom:14px}
+.field span{display:block;color:var(--muted);font-size:.74rem;font-weight:700;margin-bottom:6px;letter-spacing:.05em;text-transform:uppercase}
+select,input[type=text]{width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--line2);border-radius:var(--r-md);padding:12px 14px;font-size:.96rem;font-weight:600;outline:none;transition:border-color .15s,box-shadow .15s}
+select:focus,input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:var(--r-md);padding:13px 18px;font-weight:800;font-size:.98rem;cursor:pointer;background:var(--accent);color:#1a1206;transition:transform .14s var(--ease),filter .14s,opacity .14s;width:100%}
+.btn:hover:not(:disabled){transform:translateY(-1px);filter:brightness(1.06)}
+.btn:active:not(:disabled){transform:translateY(0)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.ghost{background:var(--surface2);color:var(--text);border:1px solid var(--line2)}
+.btn.ghost:hover:not(:disabled){background:#232a3a}
+.btn.danger{background:transparent;color:#fca5a5;border:1px solid rgba(248,113,113,.4)}
+.btn.sm{padding:10px 14px;font-size:.9rem;width:auto}
+.status{margin-top:14px;padding:12px 14px;border-radius:var(--r-md);background:var(--surface2);border:1px solid var(--line);color:var(--muted);font-size:.9rem;line-height:1.45;min-height:44px}
+.status.ok{color:#a7f3d0;border-color:rgba(52,211,153,.35)}
+.status.err{color:#fecaca;border-color:rgba(248,113,113,.35)}
+.foot{margin-top:30px;color:var(--muted2);font-size:.82rem;line-height:1.6;text-align:center}
+.foot a{color:var(--muted)}
 
-  <style>
-    :root {
-      --bg: #071018;
-      --bg2: #0b1620;
-      --card: rgba(13, 27, 36, 0.94);
-      --card2: rgba(16, 32, 43, 0.95);
-      --border: rgba(94, 163, 192, 0.18);
-      --text: #e8f1f5;
-      --muted: #9fb3c0;
-      --accent: #22d3ee;
-      --good: #34d399;
-      --warn: #fbbf24;
-      --bad: #fb7185;
-      --shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    }
+/* ---------- GAME ---------- */
+#game{position:relative}
+.stage{position:absolute;inset:0;display:grid;grid-template-columns:1fr 440px}
+.photo-wrap{position:relative;overflow:hidden;background:#05070b;touch-action:none;cursor:grab}
+.photo-wrap.dragging{cursor:grabbing}
+#photoImg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform-origin:center center;will-change:transform;user-select:none;-webkit-user-drag:none;opacity:0;transition:opacity .35s var(--ease)}
+#photoImg.ready{opacity:1}
+.vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(125% 125% at 50% 42%,transparent 56%,rgba(0,0,0,.5) 100%)}
+.photo-loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-weight:600;font-size:.95rem;background:repeating-linear-gradient(45deg,#0c0f15,#0c0f15 12px,#0e121a 12px,#0e121a 24px)}
+.spinner{width:34px;height:34px;border-radius:50%;border:3px solid var(--line2);border-top-color:var(--accent);animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hud{position:absolute;top:0;left:0;right:0;z-index:5;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 16px;pointer-events:none}
+.hud>*{pointer-events:auto}
+.glass{background:rgba(11,13,18,.62);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:10px 14px;box-shadow:0 10px 30px -12px rgba(0,0,0,.8)}
+.round-lbl{font-size:.7rem;color:var(--muted);font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+.round-num{font-size:1.05rem;font-weight:800;letter-spacing:-.01em;margin-top:1px}
+.prog{height:4px;border-radius:99px;background:var(--line2);margin-top:8px;overflow:hidden;width:140px}
+.prog>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),#ffd27a);transition:width .3s var(--ease)}
+.score-wrap{text-align:right}
+.score-lbl{font-size:.68rem;color:var(--muted);font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+.score-num{font-size:1.5rem;font-weight:900;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1}
+.score-num.bump{animation:bump .45s var(--ease)}
+@keyframes bump{40%{transform:scale(1.16);color:var(--good)}}
+.timer{margin-top:7px;height:4px;border-radius:99px;background:var(--line2);overflow:hidden;width:120px;margin-left:auto}
+.timer>i{display:block;height:100%;width:100%;background:var(--good);transition:width .1s linear,background .3s}
+.timer.low>i{background:var(--bad)}
+.photo-tools{position:absolute;left:16px;bottom:16px;z-index:5;display:flex;gap:8px}
+.ptool{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:rgba(11,13,18,.62);backdrop-filter:blur(12px);color:var(--text);font-size:18px;font-weight:800;cursor:pointer;display:grid;place-items:center;transition:background .15s,transform .12s}
+.ptool:hover{background:rgba(30,36,50,.85)}
+.ptool:active{transform:scale(.94)}
+.reveal-badge{position:absolute;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);z-index:6;background:rgba(11,13,18,.82);backdrop-filter:blur(16px);border:1px solid var(--line2);border-radius:18px;padding:14px 20px;text-align:center;opacity:0;transition:opacity .4s var(--ease),transform .4s var(--ease);box-shadow:var(--shadow);max-width:min(92%,520px);pointer-events:none}
+.reveal-badge.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.rb-place{font-weight:800;font-size:1.05rem;letter-spacing:-.01em}
+.rb-dist{color:var(--muted);font-size:.9rem;margin-top:3px}
+.rb-dist b{color:var(--accent)}
+.map-panel{position:relative;background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column}
+.map-head{padding:13px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.map-head .t{font-weight:800;letter-spacing:-.01em;font-size:1rem}
+.map-head .s{color:var(--muted);font-size:.8rem;font-weight:600}
+#map{flex:1;width:100%;background:#0c0f15;z-index:1}
+.legend{display:flex;gap:14px;flex-wrap:wrap;padding:9px 16px 0;font-size:.76rem;color:var(--muted);font-weight:600}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.map-foot{padding:12px 14px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center}
+.map-foot .hint{flex:1;color:var(--muted);font-size:.85rem;font-weight:600;line-height:1.35}
+.mk{position:relative;width:20px;height:20px}
+.mk i{position:absolute;inset:2px;border-radius:50%;border:2px solid;background:rgba(0,0,0,.25)}
+.mk::before{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid currentColor;opacity:.55;animation:ping 1.5s ease-out infinite}
+@keyframes ping{0%{transform:scale(.6);opacity:.7}100%{transform:scale(2.4);opacity:0}}
+.mk-you{color:var(--info)} .mk-you i{border-color:var(--info);background:rgba(96,165,250,.35)}
+.mk-ok{color:var(--good)} .mk-ok i{border-color:var(--good);background:rgba(52,211,153,.35)}
+.mk-rival{color:var(--rival)} .mk-rival i{border-color:var(--rival);background:rgba(251,191,36,.3)}
+.route-you{stroke:var(--info);stroke-width:3;stroke-dasharray:7 9;animation:dash 1s linear infinite;opacity:.9}
+.route-rival{stroke:var(--rival);stroke-width:3;stroke-dasharray:3 10;opacity:.8}
+@keyframes dash{to{stroke-dashoffset:-32}}
+.leaflet-container{background:#0c0f15;font-family:inherit}
+.leaflet-control-attribution{background:rgba(11,13,18,.7)!important;color:var(--muted2)!important;font-size:10px!important}
+.leaflet-control-attribution a{color:var(--muted)!important}
+.leaflet-bar a{background:var(--surface2)!important;color:var(--text)!important;border-color:var(--line)!important}
+.leaflet-bar a:hover{background:#232a3a!important}
 
-    * {
-      box-sizing: border-box;
-    }
+/* ---------- RESULTS ---------- */
+#results{overflow:auto}
+.res-inner{position:relative;z-index:1;max-width:880px;margin:0 auto;padding:clamp(20px,5vw,48px)}
+.medal{font-size:clamp(3rem,9vw,5rem);line-height:1;text-align:center;margin:6px 0}
+.res-title{text-align:center;font-size:clamp(1.6rem,5vw,2.4rem);font-weight:900;letter-spacing:-.03em;margin:6px 0 2px}
+.res-sub{text-align:center;color:var(--muted);margin:0 0 22px;font-size:1rem}
+.res-total{text-align:center;font-size:clamp(2.6rem,9vw,4rem);font-weight:900;letter-spacing:-.04em;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1;margin-bottom:6px}
+.res-total small{font-size:1.1rem;color:var(--muted);font-weight:700}
+.res-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:22px 0}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px}
+.stat span{display:block;color:var(--muted);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.stat b{font-size:1.3rem;font-weight:800}
+table.rtable{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;margin-bottom:22px}
+table.rtable th,table.rtable td{padding:10px 12px;text-align:left;font-size:.9rem}
+table.rtable th{background:var(--surface2);color:var(--muted);font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em}
+table.rtable td{border-top:1px solid var(--line)}
+table.rtable td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+table.rtable .ph{width:66px}
+table.rtable .ph img{width:62px;height:44px;object-fit:cover;border-radius:8px;display:block;background:var(--surface2)}
+.tag-ok{color:var(--good)} .tag-bad{color:var(--bad)} .tag-skip{color:var(--muted2)}
+.res-actions{display:flex;gap:12px;flex-wrap:wrap}
+.res-actions .btn{width:auto;flex:1;min-width:160px}
 
-    html, body {
-      margin: 0;
-      min-height: 100%;
-      background:
-        radial-gradient(circle at top left, rgba(34, 211, 238, 0.14), transparent 28%),
-        radial-gradient(circle at bottom right, rgba(52, 211, 153, 0.12), transparent 25%),
-        linear-gradient(135deg, var(--bg), var(--bg2) 45%, #09131b);
-      color: var(--text);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-    }
-
-    body {
-      padding: 16px;
-    }
-
-    .wrap {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: end;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(1.7rem, 4vw, 2.5rem);
-      letter-spacing: -0.04em;
-    }
-
-    .subtitle {
-      margin: 4px 0 0;
-      color: var(--muted);
-    }
-
-    .pill {
-      background: var(--card2);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 10px 14px;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-
-    .screen {
-      display: none;
-    }
-
-    .screen.active {
-      display: block;
-    }
-
-    .panel,
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(8px);
-    }
-
-    .panel {
-      padding: 18px;
-      margin-bottom: 14px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 14px;
-    }
-
-    .row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    label {
-      display: grid;
-      gap: 6px;
-      color: var(--muted);
-      font-size: 0.92rem;
-      font-weight: 700;
-    }
-
-    input, select, button {
-      font: inherit;
-    }
-
-    input, select {
-      width: 100%;
-      background: #0d1b24;
-      color: var(--text);
-      border: 1px solid #25465c;
-      border-radius: 14px;
-      padding: 12px 14px;
-      outline: none;
-    }
-
-    input:focus, select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.12);
-    }
-
-    button {
-      border: 0;
-      border-radius: 16px;
-      padding: 12px 16px;
-      font-weight: 900;
-      cursor: pointer;
-      background: var(--accent);
-      color: #06131a;
-      transition: transform 0.14s ease, opacity 0.14s ease, background 0.14s ease;
-    }
-
-    button:hover:not(:disabled) {
-      transform: translateY(-1px);
-    }
-
-    button:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
-    button.secondary {
-      background: #1d3547;
-      color: var(--text);
-      border: 1px solid #31556e;
-    }
-
-    button.danger {
-      background: rgba(251, 113, 133, 0.16);
-      color: #ffd7dd;
-      border: 1px solid rgba(251, 113, 133, 0.35);
-    }
-
-    .status {
-      margin-top: 10px;
-      padding: 12px 14px;
-      border-radius: 16px;
-      background: #0c1922;
-      border: 1px solid #25465c;
-      color: var(--muted);
-      line-height: 1.4;
-    }
-
-    .hint {
-      color: var(--muted);
-      line-height: 1.5;
-      margin: 8px 0 0;
-    }
-
-    .game-top {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 12px;
-      color: var(--muted);
-      font-weight: 900;
-    }
-
-    .game-grid {
-      display: grid;
-      grid-template-columns: 1.05fr 1fr;
-      gap: 14px;
-      align-items: start;
-    }
-
-    .image-box {
-      background: #0c1922;
-      border: 1px solid var(--border);
-      border-radius: 22px;
-      overflow: hidden;
-      min-height: 320px;
-      display: grid;
-      place-items: center;
-      padding: 10px;
-    }
-
-    .image-box img {
-      width: 100%;
-      max-height: 420px;
-      object-fit: contain;
-      border-radius: 16px;
-      display: none;
-      background: #0c1922;
-    }
-
-    #map {
-      width: 100%;
-      height: 460px;
-      border: 1px solid var(--border);
-      border-radius: 22px;
-      overflow: hidden;
-      background: #0c1922;
-      z-index: 1;
-    }
-
-    .controls {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 14px;
-    }
-
-    #guessText {
-      flex: 1 1 260px;
-      color: var(--muted);
-      font-weight: 800;
-      line-height: 1.35;
-    }
-
-    .feedback {
-      margin-top: 14px;
-      padding: 14px 16px;
-      border-radius: 18px;
-      background: #0c1922;
-      border: 1px solid #25465c;
-      line-height: 1.45;
-    }
-
-    .feedback.hidden {
-      display: none;
-    }
-
-    .feedback strong {
-      color: var(--text);
-    }
-
-    .end-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px;
-      margin: 16px 0;
-    }
-
-    .score-box {
-      background: #0f202b;
-      border: 1px solid #25465c;
-      border-radius: 18px;
-      padding: 14px;
-    }
-
-    .score-box span {
-      display: block;
-      color: var(--muted);
-      font-size: 0.9rem;
-      margin-bottom: 6px;
-    }
-
-    .score-box strong {
-      font-size: 1.4rem;
-    }
-
-    .big {
-      font-size: clamp(2rem, 6vw, 3.2rem);
-      font-weight: 950;
-      letter-spacing: -0.05em;
-      margin: 10px 0;
-      color: var(--good);
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    footer {
-      margin-top: 16px;
-      color: var(--muted);
-      font-size: 0.88rem;
-      line-height: 1.45;
-    }
-
-    footer a {
-      color: #8fd7ec;
-    }
-
-    @media (max-width: 900px) {
-      .game-grid {
-        grid-template-columns: 1fr;
-      }
-
-      #map {
-        height: 380px;
-      }
-
-      .image-box img {
-        max-height: 320px;
-      }
-    }
-  </style>
+@media(max-width:880px){
+  .stage{grid-template-columns:1fr;grid-template-rows:54vh 1fr}
+  .map-panel{border-left:0;border-top:1px solid var(--line)}
+  .hud{padding:10px}.prog{width:96px}.timer{width:84px}.score-num{font-size:1.2rem}
+  .photo-tools{left:10px;bottom:10px}.ptool{width:38px;height:38px;font-size:16px}
+}
+@media(max-width:480px){.row2{grid-template-columns:1fr}.reveal-badge{bottom:14px;padding:12px 14px}}
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
+
+<!-- LOBBY -->
+<section id="lobby" class="screen active">
+  <div class="bg-deco"></div>
+  <div class="lobby-inner">
+    <div class="brand">
+      <div class="logo">V</div>
       <div>
         <h1>VigoGuessr</h1>
-        <p class="subtitle">GeoGuessr ambientado en Vigo: mira la foto y sitúala en el mapa.</p>
+        <p class="tagline">GeoGuessr de Vigo: mira la foto y sitúala en el mapa.</p>
       </div>
-      <div class="pill" id="modePill">Modo: solo</div>
-    </header>
+    </div>
+    <div class="pool-chip"><span class="dot load" id="poolDot"></span><span id="poolInfo">Cargando fotos de Vigo desde Wikimedia Commons…</span></div>
 
-    <main>
-      <!-- HOME -->
-      <section id="home" class="screen active">
-        <div class="panel">
-          <div class="grid">
-            <div>
-              <h2 style="margin-top:0;">Jugar solo</h2>
-              <p class="hint">
-                Elige número de rondas y dificultad. Luego pulsa “Jugar solo”.
-              </p>
-
-              <div class="row" style="margin-top:12px;">
-                <label>
-                  Rondas
-                  <select id="rounds">
-                    <option value="5">5</option>
-                    <option value="8" selected>8</option>
-                    <option value="11">Todas (11)</option>
-                  </select>
-                </label>
-
-                <label>
-                  Dificultad del mapa
-                  <select id="zoom">
-                    <option value="13">Fácil · más zoom</option>
-                    <option value="12" selected>Normal</option>
-                    <option value="11">Difícil · menos zoom</option>
-                  </select>
-                </label>
-
-                <label>
-                  Apodo
-                  <input id="nick" maxlength="14" value="Vigo" />
-                </label>
-              </div>
-
-              <div class="row" style="margin-top:12px;">
-                <button id="soloBtn">Jugar solo</button>
-              </div>
-            </div>
-
-            <div>
-              <h2 style="margin-top:0;">Jugar con otro dispositivo</h2>
-              <p class="hint">
-                Uno crea sala y comparte el código. El otro abre el mismo HTML en otro móvil/PC,
-                introduce el código y pulsa “Unirse”.
-              </p>
-
-              <div class="row" style="margin-top:12px;">
-                <button id="createBtn">Crear sala</button>
-
-                <label style="flex:1 1 180px;">
-                  Código de sala
-                  <input id="roomInput" placeholder="EJ. K7M2P" maxlength="8" />
-                </label>
-
-                <button id="joinBtn">Unirse</button>
-              </div>
-
-              <div id="onlineStatus" class="status">Sin conexión online.</div>
-
-              <div class="row" style="margin-top:12px;">
-                <button id="startMatchBtn" disabled>Empezar partida online</button>
-                <button id="leaveBtn" class="secondary hidden">Salir de sala</button>
-              </div>
-            </div>
-          </div>
+    <div class="cards">
+      <div class="card">
+        <h2><span class="ic">▶</span> Jugar solo</h2>
+        <p class="desc">Rondas aleatorias del banco de fotos de Vigo (centro y afueras). Sin rival, a tu ritmo.</p>
+        <div class="row2">
+          <label class="field"><span>Rondas</span>
+            <select id="rounds"><option value="5">5</option><option value="8" selected>8</option><option value="12">12</option><option value="20">20</option></select>
+          </label>
+          <label class="field"><span>Segundos / ronda</span>
+            <select id="sec"><option value="30">30</option><option value="45" selected>45</option><option value="60">60</option><option value="90">90</option></select>
+          </label>
         </div>
+        <label class="field"><span>Dificultad del mapa</span>
+          <select id="zoom"><option value="14">Fácil · más zoom</option><option value="13" selected>Normal</option><option value="12">Difícil · menos zoom</option></select>
+        </label>
+        <label class="field"><span>Apodo</span><input id="nick" maxlength="14" value="Lola" /></label>
+        <button class="btn" id="soloBtn" disabled>Jugar solo</button>
+      </div>
 
-        <div class="panel">
-          <h3 style="margin-top:0;">Cómo compartirlo</h3>
-          <p class="hint">
-            Puedes enviar este archivo HTML por WhatsApp, correo, Drive, etc. Cada persona lo abre
-            en su navegador. Para el modo online, ambos necesitan internet.
-          </p>
-          <p class="hint">
-            Si al abrirlo como archivo local el modo online falla en algún móvil, sube el HTML a
-            un hosting estático gratuito como GitHub Pages, Netlify o Cloudflare Pages.
-          </p>
+      <div class="card">
+        <h2><span class="ic">⇄</span> Jugar con otro dispositivo</h2>
+        <p class="desc">Uno crea sala y pasa el código; el otro entra. Ambos ven las mismas fotos, en el mismo orden.</p>
+        <div class="row2" style="margin-bottom:14px">
+          <button class="btn ghost sm" id="createBtn" style="width:100%">Crear sala</button>
+          <button class="btn ghost sm" id="joinBtn" style="width:100%">Unirse</button>
         </div>
-      </section>
-
-      <!-- GAME -->
-      <section id="game" class="screen">
-        <div class="card" style="padding:16px;">
-          <div class="game-top">
-            <div id="roundLabel">Ronda 1</div>
-            <div id="scoreLabel">Tú: 0</div>
-          </div>
-
-          <div class="game-grid">
-            <div class="image-box">
-              <img id="streetImg" alt="Foto de Vigo" referrerpolicy="no-referrer" />
-              <div id="imgNote" style="color:var(--muted); padding:16px; text-align:center;"></div>
-            </div>
-
-            <div id="map"></div>
-          </div>
-
-          <div class="controls">
-            <div id="guessText">Haz clic en el mapa para marcar tu respuesta.</div>
-            <div class="row">
-              <button id="confirmBtn" disabled>Confirmar</button>
-              <button id="nextBtn" disabled>Siguiente</button>
-              <button id="quitBtn" class="danger">Salir</button>
-            </div>
-          </div>
-
-          <div id="feedback" class="feedback hidden"></div>
+        <label class="field"><span>Código de sala</span><input id="roomInput" placeholder="EJ. K7M2P" maxlength="8" /></label>
+        <div id="onlineStatus" class="status">Sin conexión online.</div>
+        <div class="row2" style="margin-top:14px">
+          <button class="btn" id="startMatchBtn" disabled style="width:100%">Empezar</button>
+          <button class="btn danger sm" id="leaveBtn" style="width:100%;display:none">Salir</button>
         </div>
-      </section>
+      </div>
+    </div>
 
-      <!-- END -->
-      <section id="end" class="screen">
-        <div class="card" style="padding:18px;">
-          <h2 id="endTitle" style="margin:0;">Resultado</h2>
-          <p id="endText" class="hint"></p>
-
-          <div class="big" id="finalScore">0 pts</div>
-
-          <div class="end-grid">
-            <div class="score-box">
-              <span>Tu puntuación</span>
-              <strong id="localFinal">0</strong>
-            </div>
-
-            <div class="score-box" id="remoteRow" style="display:none;">
-              <span id="remoteLabel">Rival</span>
-              <strong id="remoteFinal">0</strong>
-            </div>
-
-            <div class="score-box">
-              <span>Rondas</span>
-              <strong id="roundsFinal">0</strong>
-            </div>
-
-            <div class="score-box">
-              <span>Precisión media</span>
-              <strong id="accuracyFinal">0%</strong>
-            </div>
-          </div>
-
-          <div class="row">
-            <button id="againBtn">Jugar otra vez</button>
-            <button id="homeBtn" class="secondary">Menú</button>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <footer>
-      Mapa: © OpenStreetMap contributors. Imágenes: Wikimedia Commons.
-      Este proyecto es una versión local/educativa tipo GeoGuessr centrada en Vigo.
-    </footer>
+    <p class="foot">Mapa © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>. Fotos © sus autores en <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>. Área: término municipal de Vigo + Islas Cíes.</p>
   </div>
+</section>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""></script>
+<!-- GAME -->
+<section id="game" class="screen">
+  <div class="stage">
+    <div class="photo-wrap" id="photoWrap">
+      <img id="photoImg" alt="Foto de Vigo" referrerpolicy="no-referrer" draggable="false" />
+      <div class="vignette"></div>
+      <div class="photo-loading" id="photoLoading"><div><div class="spinner"></div>Cargando foto…</div></div>
+      <div class="hud">
+        <div class="glass">
+          <div class="round-lbl">Ronda</div>
+          <div class="round-num" id="roundLabel">1 / 8</div>
+          <div class="prog"><i id="progBar"></i></div>
+        </div>
+        <div class="glass score-wrap">
+          <div class="score-lbl">Puntos</div>
+          <div class="score-num" id="scoreNum">0</div>
+          <div class="timer" id="timerBox"><i id="timerBar"></i></div>
+        </div>
+      </div>
+      <div class="photo-tools">
+        <button class="ptool" id="zoomIn" title="Acercar">+</button>
+        <button class="ptool" id="zoomOut" title="Alejar">−</button>
+        <button class="ptool" id="zoomReset" title="Centrar">⟲</button>
+      </div>
+      <div class="reveal-badge" id="revealBadge"></div>
+    </div>
 
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <div class="map-panel">
+      <div class="map-head">
+        <div class="t">¿Dónde es esto?</div>
+        <div class="s" id="mapSub">Haz clic en el mapa</div>
+      </div>
+      <div id="map"></div>
+      <div class="legend">
+        <span><i style="background:var(--info)"></i>Tu marca</span>
+        <span><i style="background:var(--good)"></i>Real</span>
+        <span id="legRival" style="display:none"><i style="background:var(--rival)"></i>Rival</span>
+      </div>
+      <div class="map-foot">
+        <div class="hint" id="guessHint">Mira la foto con zoom y marca el punto.</div>
+        <button class="btn sm" id="confirmBtn" disabled>Confirmar</button>
+        <button class="btn ghost sm" id="nextBtn" disabled>Siguiente</button>
+      </div>
+    </div>
+  </div>
+</section>
 
-  <script>
-    const $ = (id) => document.getElementById(id);
+<!-- RESULTS -->
+<section id="results" class="screen">
+  <div class="bg-deco"></div>
+  <div class="res-inner">
+    <div class="medal" id="medal">🏅</div>
+    <h2 class="res-title" id="resTitle">Resultado</h2>
+    <p class="res-sub" id="resSub"></p>
+    <div class="res-total" id="resTotal">0 <small>pts</small></div>
+    <div class="res-stats">
+      <div class="stat"><span>Aciertos</span><b id="stCorrect">0/0</b></div>
+      <div class="stat"><span>Mejor ronda</span><b id="stBest">0</b></div>
+      <div class="stat"><span>Distancia media</span><b id="stAvg">—</b></div>
+      <div class="stat" id="stRivalBox" style="display:none"><span id="stRivalLbl">Rival</span><b id="stRival">0</b></div>
+    </div>
+    <table class="rtable"><thead><tr><th class="ph"></th><th>Lugar</th><th class="num">Distancia</th><th class="num">Puntos</th></tr></thead><tbody id="resBody"></tbody></table>
+    <div class="res-actions">
+      <button class="btn" id="againBtn">Jugar otra vez</button>
+      <button class="btn ghost" id="homeBtn">Menú</button>
+    </div>
+  </div>
+</section>
 
-    const fp = (name) =>
-      `https://commons.wikimedia.org/wiki/Special:FilePath/${name}?width=1280`;
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const API="https://commons.wikimedia.org/w/api.php";
+const fp=t=>`https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(t.replace(/^File:/i,""))}?width=1600`;
 
-    const DATA = [
-      {
-        id: 1,
-        place: "Calle del Príncipe · adornos navideños",
-        lat: 42.2381,
-        lng: -8.7222,
-        img: fp("Navidad_en_la_Calle_del_Pr%C3%ADncipe.jpg")
-      },
-      {
-        id: 2,
-        place: "Calle del Príncipe desde la Puerta del Sol",
-        lat: 42.2370,
-        lng: -8.7207,
-        img: fp("Vigo,_r%C3%BAa_Pr%C3%ADncipe_dende_a_Porta_do_Sol.JPG")
-      },
-      {
-        id: 3,
-        place: "Calle del Príncipe, lado del gimnasio",
-        lat: 42.2384,
-        lng: -8.7230,
-        img: fp("Vigo,_CALLE_DEL_PR%C3%8DNCIPE,_LADO_DEL_GIMNASIO,_Eugenio_Krapf.jpg")
-      },
-      {
-        id: 4,
-        place: "Rúa do Príncipe, Vigo",
-        lat: 42.2378,
-        lng: -8.7216,
-        img: fp("R%C3%BAa_do_Pr%C3%ADncipe,_Vigo.jpg")
-      },
-      {
-        id: 5,
-        place: "MARCO · Museo de Arte Contemporánea de Vigo",
-        lat: 42.2389,
-        lng: -8.7243,
-        img: fp("Museo_de_Arte_Contempor%C3%A1nea_001.JPG")
-      },
-      {
-        id: 6,
-        place: "Calle del Príncipe · vista histórica",
-        lat: 42.2379,
-        lng: -8.7219,
-        img: fp("Vigo-Principe91_%283196735180%29.jpg")
-      },
-      {
-        id: 7,
-        place: "A rúa do Príncipe",
-        lat: 42.2377,
-        lng: -8.7214,
-        img: fp("A_r%C3%BAa_do_Pr%C3%ADncipe._Vigo.jpg")
-      },
-      {
-        id: 8,
-        place: "A Sede · Celta de Vigo, centro de Vigo",
-        lat: 42.2382,
-        lng: -8.7225,
-        img: fp("A_Sede_%28Celta_de_Vigo%29.jpg")
-      },
-      {
-        id: 9,
-        place: "Farola navideña en la calle Urzáiz",
-        lat: 42.2365,
-        lng: -8.7232,
-        img: fp("Navidad_en_la_farola_de_la_calle_Urz%C3%A1iz_de_Vigo.jpg")
-      },
-      {
-        id: 10,
-        place: "Calle Urzáiz, junto a la Farola",
-        lat: 42.2364,
-        lng: -8.7231,
-        img: fp("Primeras_mesas_informativas_de_Vox_en_Vigo_%2846874465934%29.jpg")
-      },
-      {
-        id: 11,
-        place: "Casa Torre de Pazos Figueroa y Casa Torre de Ceta Arines · zona Casco Vello",
-        lat: 42.2362,
-        lng: -8.7240,
-        img: fp("Casa_Torre_de_Pazos_Figueroa_y_Casa_Torre_de_Ceta_Arines,_Vigo.jpg")
-      }
-    ];
+/* ---- Área: término municipal de Vigo (continental) + Islas Cíes ---- */
+const POLY=[[42.295,-8.790],[42.295,-8.700],[42.283,-8.660],[42.250,-8.615],[42.205,-8.615],[42.185,-8.700],[42.195,-8.775],[42.235,-8.800],[42.262,-8.790]];
+const CIES={lat:42.235,lng:-8.895,r:2600};
+const SEARCH=[{lat:42.242,lng:-8.720,r:12000},{lat:42.198,lng:-8.745,r:6000},{lat:42.235,lng:-8.895,r:4000}];
 
-    const CENTER = [42.2375, -8.7225];
+function inPoly(lat,lng){let c=false;for(let i=0,j=POLY.length-1;i<POLY.length;j=i++){const yi=POLY[i][0],xi=POLY[i][1],yj=POLY[j][0],xj=POLY[j][1];if(((yi>lat)!==(yj>lat))&&(lng<(xj-xi)*(lat-yi)/(yj-yi)+xi))c=!c;}return c;}
+function inCies(lat,lng){return haversine(lat,lng,CIES.lat,CIES.lng)<=CIES.r;}
+function inVigo(lat,lng){return (lat&&lng&&(inPoly(lat,lng)||inCies(lat,lng)));}
+function haversine(a,b,c,d){const R=6371000,r=x=>x*Math.PI/180,dLa=r(c-a),dLo=r(d-b),h=Math.sin(dLa/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(h));}
+const calcScore=m=>Math.max(0,Math.round(5000*Math.exp(-(m/1000)/1.5)));
+const fmtDist=m=>m<1000?`${Math.round(m)} m`:`${(m/1000).toFixed(2)} km`;
+function mulberry32(a){return function(){a|=0;a=a+0x6d2b79f5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function shuffled(arr,rng){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
-    let map = null;
-    let guessMarker = null;
-    let correctMarker = null;
-    let remoteMarker = null;
-    let localLine = null;
-    let remoteLine = null;
-    let guessLatLng = null;
-
-    const state = {
-      online: false,
-      isHost: false,
-      peer: null,
-      conn: null,
-      roomCode: "",
-      remoteName: "",
-      settings: {
-        rounds: 8,
-        zoom: 12
-      },
-      seed: 0,
-      order: [],
-      round: 0,
-      scores: {
-        local: 0,
-        remote: 0
-      },
-      results: {
-        local: null,
-        remote: null
-      },
-      locked: false,
-      revealed: false
-    };
-
-    function showScreen(id) {
-      document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
-      $(id).classList.add("active");
-
-      if (id === "game" && map) {
-        setTimeout(() => map.invalidateSize(), 80);
-      }
+async function loadPool(){
+  const seen=new Set(),pool=[];
+  const calls=SEARCH.map(z=>{const u=`${API}?action=query&list=geosearch&gscoord=${z.lat}%7C${z.lng}&gsradius=${z.r}&gsnamespace=6&gslimit=500&gsprop=coordinates%7Cname&format=json&origin=*`;return fetch(u).then(r=>r.json()).catch(()=>null);});
+  const res=await Promise.all(calls);
+  for(const j of res){
+    const g=j&&j.query&&j.query.geosearch;if(!g)continue;
+    for(const it of g){
+      const t=it.title,co=it.coordinates;if(!t||!co)continue;
+      if(!/\.(jpe?g|png|webp)$/i.test(t))continue;
+      if(seen.has(t))continue;seen.add(t);
+      const lat=co.lat,lng=co.lon;
+      if(!isFinite(lat)||!isFinite(lng))continue;
+      if(!inVigo(lat,lng))continue;
+      pool.push({t,lat,lng});
     }
-
-    function setOnlineStatus(msg) {
-      $("onlineStatus").textContent = msg;
-    }
-
-    function setGameStatus(msg) {
-      $("guessText").textContent = msg;
-    }
-
-    function updateModePill() {
-      $("modePill").textContent = state.online
-        ? `Modo: online ${state.isHost ? "(anfitrión)" : "(invitado)"}${state.roomCode ? " · " + state.roomCode : ""}`
-        : "Modo: solo";
-    }
-
-    function getNick() {
-      return ($("nick").value || "Vigo").trim().slice(0, 14) || "Vigo";
-    }
-
-    function normalizeCode(v) {
-      return String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
-    }
-
-    function randomCode() {
-      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-      let out = "";
-      for (let i = 0; i < 5; i++) {
-        out += chars[Math.floor(Math.random() * chars.length)];
-      }
-      return out;
-    }
-
-    function peerIdFor(code) {
-      return "vigogeo-" + String(code).toLowerCase();
-    }
-
-    function mulberry32(a) {
-      return function () {
-        a |= 0;
-        a = (a + 0x6d2b79f5) | 0;
-        let t = Math.imul(a ^ (a >>> 15), 1 | a);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-      };
-    }
-
-    function buildOrder(seed, count) {
-      const rng = mulberry32(seed);
-      const indexes = DATA.map((_, i) => i);
-
-      for (let i = indexes.length - 1; i > 0; i--) {
-        const j = Math.floor(rng() * (i + 1));
-        [indexes[i], indexes[j]] = [indexes[j], indexes[i]];
-      }
-
-      return indexes.slice(0, Math.min(count, DATA.length));
-    }
-
-    function currentItem() {
-      return DATA[state.order[state.round]];
-    }
-
-    function haversine(lat1, lon1, lat2, lon2) {
-      const R = 6371000;
-      const toRad = (x) => (x * Math.PI) / 180;
-
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-
-      const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-
-      return 2 * R * Math.asin(Math.sqrt(a));
-    }
-
-    function calcScore(meters) {
-      const km = meters / 1000;
-      return Math.max(0, Math.round(5000 * Math.exp(-km / 1.5)));
-    }
-
-    function fmtDist(m) {
-      if (m < 1000) return `${Math.round(m)} m`;
-      return `${(m / 1000).toFixed(2)} km`;
-    }
-
-    function ensureMap() {
-      if (map) return;
-
-      map = L.map("map", {
-        zoomControl: true,
-        attributionControl: true,
-        maxBounds: L.latLngBounds([
-          [42.16, -8.82],
-          [42.31, -8.63]
-        ]),
-        minZoom: 10,
-        maxZoom: 18
-      }).setView(CENTER, state.settings.zoom);
-
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "&copy; OpenStreetMap contributors"
-      }).addTo(map);
-    }
-
-    function clearLayers() {
-      [guessMarker, correctMarker, remoteMarker, localLine, remoteLine].forEach((layer) => {
-        if (layer && map) map.removeLayer(layer);
-      });
-
-      guessMarker = null;
-      correctMarker = null;
-      remoteMarker = null;
-      localLine = null;
-      remoteLine = null;
-    }
-
-    function updateScoreLabel() {
-      const remote = state.online ? ` · ${state.remoteName || "Rival"}: ${state.scores.remote}` : "";
-      $("scoreLabel").textContent = `Tú: ${state.scores.local}${remote}`;
-    }
-
-    function onMapClick(e) {
-      if (state.locked) return;
-
-      guessLatLng = e.latlng;
-
-      if (guessMarker) map.removeLayer(guessMarker);
-
-      guessMarker = L.circleMarker(e.latlng, {
-        radius: 9,
-        color: "#22d3ee",
-        weight: 2,
-        fillColor: "#22d3ee",
-        fillOpacity: 0.75
-      }).addTo(map);
-
-      $("confirmBtn").disabled = false;
-      setGameStatus(`Marcado: ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`);
-    }
-
-    function renderRound() {
-      const item = currentItem();
-
-      state.results = { local: null, remote: null };
-      state.locked = false;
-      state.revealed = false;
-      guessLatLng = null;
-
-      clearLayers();
-
-      $("roundLabel").textContent = `Ronda ${state.round + 1} de ${state.order.length}`;
-      updateScoreLabel();
-
-      $("confirmBtn").disabled = true;
-      $("nextBtn").disabled = true;
-      $("feedback").classList.add("hidden");
-      $("feedback").innerHTML = "";
-
-      setGameStatus("Haz clic en el mapa para marcar tu respuesta.");
-
-      const img = $("streetImg");
-      const note = $("imgNote");
-
-      img.style.display = "none";
-      note.textContent = "Cargando imagen...";
-
-      let triedFallback = false;
-
-      img.onload = () => {
-        img.style.display = "block";
-        note.textContent = "";
-      };
-
-      img.onerror = () => {
-        if (!triedFallback) {
-          triedFallback = true;
-          img.src = item.img.split("?")[0];
-          return;
-        }
-
-        img.style.display = "none";
-        note.textContent =
-          "No se pudo cargar la imagen. Puedes intentar adivinar por el contexto del mapa o salir y volver a entrar.";
-      };
-
-      img.src = item.img;
-
-      if (map) {
-        map.setView(CENTER, state.settings.zoom);
-        map.off("click", onMapClick);
-        map.on("click", onMapClick);
-      }
-    }
-
-    function startGameUI() {
-      showScreen("game");
-      ensureMap();
-      renderRound();
-    }
-
-    function startSolo() {
-      closeOnline(false);
-
-      state.online = false;
-      state.isHost = false;
-      state.remoteName = "";
-      state.settings.rounds = Math.min(Number($("rounds").value || 8), DATA.length);
-      state.settings.zoom = Number($("zoom").value || 12);
-      state.seed = Math.floor(Math.random() * 1e9);
-      state.order = buildOrder(state.seed, state.settings.rounds);
-      state.round = 0;
-      state.scores = { local: 0, remote: 0 };
-
-      updateModePill();
-      startGameUI();
-    }
-
-    function applyStart(data) {
-      state.online = true;
-      state.settings.rounds = Math.min(Number(data.rounds || 8), DATA.length);
-      state.settings.zoom = Number(data.zoom || 12);
-      state.seed = Number(data.seed || Math.floor(Math.random() * 1e9));
-      state.order = buildOrder(state.seed, state.settings.rounds);
-      state.round = 0;
-      state.scores = { local: 0, remote: 0 };
-
-      if (!state.isHost) {
-        state.remoteName = data.hostName || "Anfitrión";
-      }
-
-      updateModePill();
-      startGameUI();
-    }
-
-    function startMatch() {
-      if (!state.conn || !state.conn.open) {
-        setOnlineStatus("No hay rival conectado todavía.");
-        return;
-      }
-
-      state.settings.rounds = Math.min(Number($("rounds").value || 8), DATA.length);
-      state.settings.zoom = Number($("zoom").value || 12);
-
-      const data = {
-        type: "start",
-        seed: Math.floor(Math.random() * 1e9),
-        rounds: state.settings.rounds,
-        zoom: state.settings.zoom,
-        hostName: getNick()
-      };
-
-      send(data);
-      applyStart(data);
-    }
-
-    function confirmGuess() {
-      if (!guessLatLng || state.locked) return;
-
-      state.locked = true;
-      map.off("click", onMapClick);
-
-      const item = currentItem();
-      const dist = haversine(guessLatLng.lat, guessLatLng.lng, item.lat, item.lng);
-      const score = calcScore(dist);
-
-      state.results.local = {
-        round: state.round,
-        dist,
-        score,
-        lat: guessLatLng.lat,
-        lng: guessLatLng.lng
-      };
-
-      const onlineActive = state.online && state.conn && state.conn.open;
-
-      if (onlineActive) {
-        send({
-          type: "result",
-          round: state.round,
-          dist,
-          score,
-          lat: guessLatLng.lat,
-          lng: guessLatLng.lng
-        });
-
-        setGameStatus("Respuesta enviada. Esperando al rival...");
-
-        if (state.results.remote) {
-          revealRound();
-        }
-      } else {
-        revealRound();
-      }
-    }
-
-    function revealRound() {
-      if (state.revealed || !state.results.local) return;
-
-      state.revealed = true;
-
-      const item = currentItem();
-      const local = state.results.local;
-      const remote = state.results.remote;
-
-      correctMarker = L.circleMarker([item.lat, item.lng], {
-        radius: 10,
-        color: "#34d399",
-        weight: 2,
-        fillColor: "#34d399",
-        fillOpacity: 0.72
-      }).addTo(map);
-
-      localLine = L.polyline(
-        [
-          [local.lat, local.lng],
-          [item.lat, item.lng]
-        ],
-        {
-          color: "#22d3ee",
-          weight: 2,
-          dashArray: "6, 8"
-        }
-      ).addTo(map);
-
-      if (remote && typeof remote.lat === "number" && typeof remote.lng === "number") {
-        remoteMarker = L.circleMarker([remote.lat, remote.lng], {
-          radius: 9,
-          color: "#fbbf24",
-          weight: 2,
-          fillColor: "#fbbf24",
-          fillOpacity: 0.72
-        }).addTo(map);
-
-        remoteLine = L.polyline(
-          [
-            [remote.lat, remote.lng],
-            [item.lat, item.lng]
-          ],
-          {
-            color: "#fbbf24",
-            weight: 2,
-            dashArray: "4, 10"
-          }
-        ).addTo(map);
-      }
-
-      const boundsPoints = [
-        [item.lat, item.lng],
-        [local.lat, local.lng]
-      ];
-
-      if (remote && typeof remote.lat === "number" && typeof remote.lng === "number") {
-        boundsPoints.push([remote.lat, remote.lng]);
-      }
-
-      map.fitBounds(L.latLngBounds(boundsPoints).pad(0.35));
-
-      state.scores.local += local.score;
-      if (remote) state.scores.remote += remote.score;
-
-      updateScoreLabel();
-
-      let html = `<strong>${item.place}</strong><br>`;
-      html += `Tu distancia: ${fmtDist(local.dist)} · ${local.score} pts`;
-
-      if (remote) {
-        html += `<br>${state.remoteName || "Rival"}: ${fmtDist(remote.dist)} · ${remote.score} pts`;
-      }
-
-      $("feedback").innerHTML = html;
-      $("feedback").classList.remove("hidden");
-
-      const onlineActive = state.online && state.conn && state.conn.open;
-
-      if (onlineActive && !state.isHost) {
-        $("nextBtn").disabled = true;
-        setGameStatus("Esperando al anfitrión para continuar...");
-      } else {
-        $("nextBtn").disabled = false;
-        setGameStatus("Puedes pasar a la siguiente ronda.");
-      }
-    }
-
-    function nextRound() {
-      const onlineActive = state.online && state.conn && state.conn.open;
-
-      if (onlineActive && !state.isHost) return;
-
-      if (state.round + 1 >= state.order.length) {
-        if (onlineActive) send({ type: "end" });
-        finishMatch();
-        return;
-      }
-
-      state.round += 1;
-
-      if (onlineActive) {
-        send({ type: "next", round: state.round });
-      }
-
-      renderRound();
-    }
-
-    function finishMatch() {
-      showScreen("end");
-
-      const local = state.scores.local;
-      const remote = state.scores.remote;
-      const max = state.order.length * 5000;
-      const pct = max ? Math.round((local / max) * 100) : 0;
-
-      $("finalScore").textContent = `${local} pts`;
-      $("localFinal").textContent = String(local);
-      $("remoteFinal").textContent = String(remote);
-      $("roundsFinal").textContent = String(state.order.length);
-      $("accuracyFinal").textContent = `${pct}%`;
-
-      const onlineActive = state.online && state.conn && state.conn.open;
-
-      $("remoteRow").style.display = onlineActive || state.remoteName ? "block" : "none";
-      $("remoteLabel").textContent = state.remoteName || "Rival";
-
-      let title = "Resultado";
-      let text = "";
-
-      if (onlineActive || state.remoteName) {
-        if (local > remote) {
-          title = "Ganas tú";
-          text = `Has superado a ${state.remoteName || "tu rival"} por ${local - remote} puntos.`;
-        } else if (remote > local) {
-          title = "Gana tu rival";
-          text = `${state.remoteName || "Tu rival"} te ha ganado por ${remote - local} puntos.`;
-        } else {
-          title = "Empate técnico";
-          text = "Misma puntuación. Habría que jugar una ronda de desempate en la rúa do Príncipe.";
-        }
-      } else {
-        if (pct >= 90) {
-          title = "Lenda de Vigo";
-          text = "Casi perfecto. Conoces el centro como si vivieras allí.";
-        } else if (pct >= 70) {
-          title = "Vigués o viguesa de pro";
-          text = "Muy buen nivel. Solo te falta un paseo más por Urzáiz, Príncipe, Real y Areal.";
-        } else if (pct >= 45) {
-          title = "Paseante atento";
-          text = "Vas bien. Sigue mirando fachadas, plazas y nombres de calles.";
-        } else {
-          title = "Turista curioso";
-          text = "Toca reaprender el callejero de Vigo. Vuelve a intentarlo.";
-        }
-      }
-
-      $("endTitle").textContent = title;
-      $("endText").textContent = text;
-    }
-
-    function send(msg) {
-      if (state.conn && state.conn.open) {
-        try {
-          state.conn.send(msg);
-        } catch (e) {
-          console.warn("No se pudo enviar mensaje:", e);
-        }
-      }
-    }
-
-    function bindConn() {
-      if (!state.conn) return;
-
-      state.conn.on("data", onData);
-      state.conn.on("close", () => {
-        setOnlineStatus("Conexión cerrada con el rival.");
-      });
-      state.conn.on("error", () => {
-        setOnlineStatus("Error en la conexión P2P.");
-      });
-    }
-
-    function onData(data) {
-      if (!data || !data.type) return;
-
-      if (data.type === "hello") {
-        if (state.isHost) {
-          state.remoteName = data.name || "Rival";
-          setOnlineStatus(`Rival conectado: ${state.remoteName}`);
-          $("startMatchBtn").disabled = false;
-          updateModePill();
-        }
-        return;
-      }
-
-      if (data.type === "start") {
-        if (!state.isHost) {
-          applyStart(data);
-        }
-        return;
-      }
-
-      if (data.type === "result") {
-        if (data.round !== state.round) return;
-
-        state.results.remote = {
-          round: data.round,
-          dist: data.dist,
-          score: data.score,
-          lat: data.lat,
-          lng: data.lng
-        };
-
-        if (state.results.local) {
-          revealRound();
-        } else {
-          setGameStatus(`${state.remoteName || "El rival"} ya ha confirmado. Marca y confirma tú.`);
-        }
-        return;
-      }
-
-      if (data.type === "next") {
-        if (!state.isHost) {
-          state.round = Number(data.round || 0);
-          renderRound();
-        }
-        return;
-      }
-
-      if (data.type === "end") {
-        if (!state.isHost) {
-          finishMatch();
-        }
-        return;
-      }
-    }
-
-    function closeOnline(updateUi = true) {
-      try {
-        if (state.conn) state.conn.close();
-      } catch (e) {}
-
-      try {
-        if (state.peer) state.peer.destroy();
-      } catch (e) {}
-
-      state.conn = null;
-      state.peer = null;
-      state.online = false;
-      state.isHost = false;
-      state.roomCode = "";
-      state.remoteName = "";
-
-      if (updateUi) {
-        $("startMatchBtn").disabled = true;
-        $("leaveBtn").classList.add("hidden");
-        setOnlineStatus("Sin conexión online.");
-        updateModePill();
-      }
-    }
-
-    function hostRoom(attempt = 0) {
-      closeOnline(false);
-
-      if (attempt > 4) {
-        setOnlineStatus("No se pudo crear la sala. Inténtalo de nuevo en unos segundos.");
-        return;
-      }
-
-      state.online = true;
-      state.isHost = true;
-      state.roomCode = randomCode();
-
-      const id = peerIdFor(state.roomCode);
-
-      updateModePill();
-      setOnlineStatus(`Creando sala ${state.roomCode}...`);
-      $("leaveBtn").classList.remove("hidden");
-
-      state.peer = new Peer(id, { debug: 1 });
-
-      state.peer.on("open", () => {
-        setOnlineStatus(`Sala creada: ${state.roomCode}. Comparte este código con el otro dispositivo.`);
-      });
-
-      state.peer.on("connection", (conn) => {
-        state.conn = conn;
-        bindConn();
-      });
-
-      state.peer.on("error", (err) => {
-        if (err && err.type === "unavailable-id") {
-          setTimeout(() => hostRoom(attempt + 1), 350);
-          return;
-        }
-
-        setOnlineStatus(`Error al crear sala: ${err?.type || "desconocido"}.`);
-      });
-    }
-
-    function joinRoom() {
-      const code = normalizeCode($("roomInput").value);
-
-      if (!code) {
-        setOnlineStatus("Introduce un código de sala.");
-        return;
-      }
-
-      closeOnline(false);
-
-      state.online = true;
-      state.isHost = false;
-      state.roomCode = code;
-
-      updateModePill();
-      setOnlineStatus(`Conectando a la sala ${code}...`);
-      $("leaveBtn").classList.remove("hidden");
-
-      state.peer = new Peer(undefined, { debug: 1 });
-
-      state.peer.on("open", () => {
-        const conn = state.peer.connect(peerIdFor(code), { reliable: true });
-        state.conn = conn;
-        bindConn();
-
-        conn.on("open", () => {
-          send({ type: "hello", name: getNick() });
-          setOnlineStatus(`Conectado a ${code}. Esperando a que el anfitrión empiece la partida.`);
-        });
-      });
-
-      state.peer.on("error", (err) => {
-        const extra = err?.type === "peer-unavailable" ? ". Revisa el código." : "";
-        setOnlineStatus(`Error al unirte: ${err?.type || "desconocido"}${extra}`);
-      });
-    }
-
-    $("soloBtn").addEventListener("click", startSolo);
-    $("createBtn").addEventListener("click", () => hostRoom(0));
-    $("joinBtn").addEventListener("click", joinRoom);
-    $("startMatchBtn").addEventListener("click", startMatch);
-
-    $("leaveBtn").addEventListener("click", () => {
-      closeOnline(true);
-      showScreen("home");
-    });
-
-    $("confirmBtn").addEventListener("click", confirmGuess);
-    $("nextBtn").addEventListener("click", nextRound);
-
-    $("quitBtn").addEventListener("click", () => {
-      closeOnline(true);
-      showScreen("home");
-    });
-
-    $("againBtn").addEventListener("click", () => {
-      const onlineActive = state.online && state.conn && state.conn.open;
-
-      if (onlineActive) {
-        showScreen("home");
-
-        if (state.isHost) {
-          setOnlineStatus("Listo para nueva partida. Pulsa “Empezar partida online”.");
-        } else {
-          setOnlineStatus("Conectado. Espera a que el anfitrión empiece la nueva partida.");
-        }
-
-        return;
-      }
-
-      startSolo();
-    });
-
-    $("homeBtn").addEventListener("click", () => {
-      closeOnline(true);
-      showScreen("home");
-    });
-
-    document.addEventListener("keydown", (e) => {
-      if (!$("game").classList.contains("active")) return;
-
-      if (e.key === "Enter" && !$("nextBtn").disabled) {
-        e.preventDefault();
-        nextRound();
-      }
-
-      if (e.key === " " && !$("confirmBtn").disabled) {
-        e.preventDefault();
-        confirmGuess();
-      }
-    });
-
-    updateModePill();
-  </script>
+  }
+  return pool;
+}
+
+/* ---- Estado ---- */
+const S={online:false,isHost:false,peer:null,conn:null,room:"",remote:"",pool:[],order:[],round:0,score:0,rivalScore:0,correct:0,best:0,streak:0,bestStreak:0,rows:[],rRows:[],locked:false,revealed:false,timer:null,timeLeft:0,settings:{rounds:8,sec:45,zoom:13}};
+let map=null,gMk=null,oMk=null,rMk=null,gLine=null,rLine=null,guess=null;
+let imgScale=1,imgX=0,imgY=0,dragging=false,lastX=0,lastY=0,pinchD=0;
+
+function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));$(id).classList.add("active");if(id==="game"&&map)setTimeout(()=>map.invalidateSize(),90);}
+function setPool(msg,cls){$("poolInfo").textContent=msg;const d=$("poolDot");d.className="dot"+(cls==="load"?" load":cls==="err"?" err":"");}
+function nick(){return ($("nick").value||"Vigo").trim().slice(0,14)||"Vigo";}
+function updScore(){const r=S.online?` · ${S.remote||"Rival"}: ${S.rivalScore}`:"";$("scoreNum").textContent=S.score+r;}
+
+/* ---- Mapa ---- */
+function ensureMap(){
+  if(map)return;
+  map=L.map("map",{zoomControl:true,attributionControl:true,maxBounds:L.latLngBounds([[42.16,-8.83],[42.32,-8.58]]),minZoom:10,maxZoom:18}).setView([42.242,-8.720],S.settings.zoom);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
+  map.on("click",onMapClick);
+}
+function clearLayers(){[gMk,oMk,rMk,gLine,rLine].forEach(l=>l&&map&&map.removeLayer(l));gMk=oMk=rMk=gLine=rLine=null;}
+function icon(cls){return L.divIcon({className:"",html:`<div class="mk ${cls}"><i></i></div>`,iconSize:[20,20],iconAnchor:[10,10]});}
+function onMapClick(e){if(S.locked)return;guess=e.latlng;if(gMk)map.removeLayer(gMk);gMk=L.marker(e.latlng,{icon:icon("mk-you")}).addTo(map);$("confirmBtn").disabled=false;$("mapSub").textContent=`${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;$("guessHint").textContent="¿Seguro? Pulsa Confirmar.";}
+
+/* ---- Zoom/pan foto ---- */
+function applyImg(){$("photoImg").style.transform=`translate(${imgX}px,${imgY}px) scale(${imgScale})`;}
+function resetImg(){imgScale=1;imgX=0;imgY=0;applyImg();}
+function zoomAt(f,cx,cy){const w=$("photoWrap").getBoundingClientRect();cx=cx??w.width/2;cy=cy??w.height/2;const ns=Math.min(5,Math.max(1,imgScale*f));const k=ns/imgScale;imgX=cx-(cx-imgX)*k;imgY=cy-(cy-imgY)*k;imgScale=ns;if(imgScale===1){imgX=0;imgY=0;}applyImg();}
+(function bindPhoto(){
+  const w=$("photoWrap");
+  w.addEventListener("wheel",e=>{e.preventDefault();zoomAt(e.deltaY<0?1.18:1/1.18,e.clientX-w.getBoundingClientRect().left,e.clientY-w.getBoundingClientRect().top);},{passive:false});
+  w.addEventListener("pointerdown",e=>{if(e.pointerType==="touch"&&w.querySelectorAll("*").length&&e.target.closest(".photo-tools,.hud,.reveal-badge"))return;dragging=true;lastX=e.clientX;lastY=e.clientY;w.classList.add("dragging");w.setPointerCapture(e.pointerId);});
+  w.addEventListener("pointermove",e=>{if(!dragging)return;imgX+=e.clientX-lastX;imgY+=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;applyImg();});
+  const up=()=>{dragging=false;w.classList.remove("dragging");};
+  w.addEventListener("pointerup",up);w.addEventListener("pointercancel",up);
+  $("zoomIn").onclick=()=>zoomAt(1.25);$("zoomOut").onclick=()=>zoomAt(1/1.25);$("zoomReset").onclick=resetImg;
+})();
+
+/* ---- Rondas ---- */
+function buildOrder(seed,n){const rng=mulberry32(seed);return shuffled(S.pool.map((_,i)=>i),rng).slice(0,Math.min(n,S.pool.length));}
+function cur(){return S.pool[S.order[S.round]];}
+function renderRound(){
+  stopTimer();S.locked=false;S.revealed=false;guess=null;clearLayers();resetImg();
+  const it=cur();
+  $("roundLabel").textContent=`${S.round+1} / ${S.order.length}`;
+  $("progBar").style.width=`${(S.round/S.order.length)*100}%`;
+  updScore();
+  $("confirmBtn").disabled=true;$("nextBtn").disabled=true;
+  $("revealBadge").className="reveal-badge";$("revealBadge").innerHTML="";
+  $("mapSub").textContent="Haz clic en el mapa";$("guessHint").textContent="Mira la foto con zoom y marca el punto.";
+  $("legRival").style.display=S.online?"inline":"none";
+  const img=$("photoImg"),ld=$("photoLoading");
+  img.classList.remove("ready");ld.style.display="grid";
+  let fb=false;
+  img.onload=()=>{img.classList.add("ready");ld.style.display="none";};
+  img.onerror=()=>{if(!fb){fb=true;img.src=fp(it.t).split("?")[0];return;}ld.innerHTML='<div>No se pudo cargar la foto.<br>Pasa de ronda.</div>';};
+  img.src=fp(it.t);
+  if(map){map.setView([42.242,-8.720],S.settings.zoom);map.off("click",onMapClick);map.on("click",onMapClick);}
+  startTimer(S.settings.sec);
+}
+function startTimer(sec){S.timeLeft=sec;const bar=$("timerBar");bar.style.width="100%";$("timerBox").classList.remove("low");S.timer=setInterval(()=>{S.timeLeft--;bar.style.width=`${Math.max(0,S.timeLeft/sec)*100}%`;if(S.timeLeft<=8)$("timerBox").classList.add("low");if(S.timeLeft<=0){stopTimer();timeout();}},1000);}
+function stopTimer(){if(S.timer){clearInterval(S.timer);S.timer=null;}}
+function timeout(){if(S.locked)return;S.locked=true;map.off("click",onMapClick);reveal(0,null,true);}
+function confirm(){if(!guess||S.locked)return;S.locked=true;map.off("click",onMapClick);const it=cur();const d=haversine(guess.lat,guess.lng,it.lat,it.lng);const sc=calcScore(d);if(S.online)send({type:"result",round:S.round,dist:d,score:sc,lat:guess.lat,lng:guess.lng});if(S.online&&S.results&&S.results.remote!==undefined){reveal(sc,guess,false);}else{reveal(sc,guess,false);}}
+function reveal(sc,mark,skip){
+  if(S.revealed)return;S.revealed=true;stopTimer();
+  const it=cur();
+  oMk=L.marker([it.lat,it.lng],{icon:icon("mk-ok")}).addTo(map);
+  if(mark){gLine=L.polyline([[mark.lat,mark.lng],[it.lat,it.lng]],{className:"route-you"}).addTo(map);}
+  const rr=S.results&&S.results.remote;
+  if(rr&&rr.lat!=null){rMk=L.marker([rr.lat,rr.lng],{icon:icon("mk-rival")}).addTo(map);rLine=L.polyline([[rr.lat,rr.lng],[it.lat,it.lng]],{className:"route-rival"}).addTo(map);}
+  const pts=[[it.lat,it.lng]];if(mark)pts.push([mark.lat,mark.lng]);if(rr&&rr.lat!=null)pts.push([rr.lat,rr.lng]);
+  map.fitBounds(L.latLngBounds(pts).pad(0.4));
+  const dist=mark?haversine(mark.lat,mark.lng,it.lat,it.lng):null;
+  S.score+=sc;S.rows.push({t:it.t,place:labelOf(it),dist,score:sc,skip});
+  if(sc>0){S.correct++;S.streak++;S.bestStreak=Math.max(S.bestStreak,S.streak);S.best=Math.max(S.best,sc);}else S.streak=0;
+  const el=$("scoreNum");el.textContent=S.score;el.classList.remove("bump");void el.offsetWidth;el.classList.add("bump");
+  $("progBar").style.width=`${((S.round+1)/S.order.length)*100}%`;
+  const rb=$("revealBadge");
+  rb.innerHTML=`<div class="rb-place">${labelOf(it)}</div><div class="rb-dist">${skip?"Tiempo agotado · 0 pts":`${fmtDist(dist)} · <b>+${sc}</b> pts`}</div>`;
+  rb.classList.add("show");
+  const hostTurn=!S.online||S.isHost;
+  $("nextBtn").disabled=!hostTurn;
+  $("guessHint").textContent=hostTurn?"Siguiente ronda.":"Esperando al anfitrión…";
+  if(S.online&&!S.isHost&&S.results&&S.results.remote===undefined){/* esperando */}
+}
+function labelOf(it){return it.t.replace(/^File:/i,"").replace(/\.[a-z]+$/i,"").replace(/[_-]+/g," ").replace(/\s+/g," ").trim().slice(0,60);}
+function next(){if(S.online&&!S.isHost)return;if(S.round+1>=S.order.length){if(S.online)send({type:"end"});finish();return;}S.round++;if(S.online)send({type:"next",round:S.round});renderRound();}
+
+/* ---- Fin ---- */
+function finish(){
+  show("results");
+  const n=S.order.length,max=n*5000,pct=max?Math.round(S.score/max*100):0;
+  const avg=S.rows.filter(r=>r.dist!=null);const avgD=avg.length?avg.reduce((s,r)=>s+r.dist,0)/avg.length:null;
+  $("resTotal").innerHTML=`${S.score} <small>pts</small>`;
+  $("stCorrect").textContent=`${S.correct}/${n}`;
+  $("stBest").textContent=S.best;
+  $("stAvg").textContent=avgD!=null?fmtDist(avgD):"—";
+  const rb=$("stRivalBox");if(S.online||S.remote){rb.style.display="block";$("stRivalLbl").textContent=S.remote||"Rival";$("stRival").textContent=S.rivalScore;}else rb.style.display="none";
+  let medal="🧭",title="Resultado",sub="";
+  if(S.online||S.remote){if(S.score>S.rivalScore){medal="🏆";title="Ganas tú";sub=`Superaste a ${S.remote||"tu rival"} por ${S.score-S.rivalScore} pts.`;}else if(S.rivalScore>S.score){medal="💪";title="Gana tu rival";sub=`${S.remote||"Tu rival"} te ganó por ${S.rivalScore-S.score} pts.`;}else{medal="🤝";title="Empate";sub="Misma puntuación. Revancha en rúa do Príncipe.";} }
+  else{if(pct>=90){medal="👑";title="Lenda de Vigo";sub="Casi perfecto. Conoces el término municipal como la palma.";}else if(pct>=70){medal="🏅";title="Vigués o viguesa de pro";sub="Muy buen nivel. Samil, Cabral, el Zoo y el centro ya los tienes.";}else if(pct>=45){medal="🧭";title="Paseante atento";sub="Vas bien. Sigue mirando fachadas, playas y montes.";}else{medal="🗺️";title="Turista curioso";sub="Toca recorrerse Vigo de punta a punta. Vuelve a intentarlo.";} }
+  $("medal").textContent=medal;$("resTitle").textContent=title;$("resSub").textContent=sub;
+  const tb=$("resBody");tb.innerHTML="";
+  S.rows.forEach((r,i)=>{const tr=document.createElement("tr");tr.innerHTML=`<td class="ph"><img loading="lazy" src="${fp(r.t)}" onerror="this.style.opacity=.2"></td><td>${i+1}. ${r.place}</td><td class="num ${r.skip?'tag-skip':r.dist<300?'tag-ok':'tag-bad'}">${r.skip?"—":fmtDist(r.dist)}</td><td class="num">${r.score}</td>`;tb.appendChild(tr);});
+  saveBest();
+}
+function saveBest(){try{const b=Number(localStorage.getItem("vg_best")||0);if(S.score>b)localStorage.setItem("vg_best",String(S.score));}catch(e){}}
+
+/* ---- Inicio partida ---- */
+function startSolo(){closeOnline(false);S.online=false;S.remote="";S.settings={rounds:+$("rounds").value,sec:+$("sec").value,zoom:+$("zoom").value};S.pool=POOL_CACHE;S.order=buildOrder(Math.floor(Math.random()*1e9),S.settings.rounds);resetMatch();show("game");ensureMap();renderRound();}
+function resetMatch(){S.round=0;S.score=0;S.rivalScore=0;S.correct=0;S.best=0;S.streak=0;S.bestStreak=0;S.rows=[];S.results={};}
+function applyStart(d){S.online=true;S.settings={rounds:+d.rounds||8,sec:+d.sec||45,zoom:+d.zoom||13};S.pool=d.pool;S.order=d.order;if(!S.isHost)S.remote=d.hostName||"Anfitrión";resetMatch();show("game");ensureMap();renderRound();}
+function startMatch(){if(!S.conn||!S.conn.open){setOnline("No hay rival conectado.");return;}S.settings={rounds:+$("rounds").value,sec:+$("sec").value,zoom:+$("zoom").value};const order=buildOrder(Math.floor(Math.random()*1e9),S.settings.rounds);const d={type:"start",pool:S.pool,order,rounds:S.settings.rounds,sec:S.settings.sec,zoom:S.settings.zoom,hostName:nick()};send(d);S.isHost=true;applyStart(d);}
+
+/* ---- Online ---- */
+function setOnline(m,cls){$("onlineStatus").textContent=m;$("onlineStatus").className="status"+(cls?" "+cls:"");}
+function send(x){if(S.conn&&S.conn.open)try{S.conn.send(x);}catch(e){}}
+function bindConn(){S.conn.on("data",onData);S.conn.on("close",()=>setOnline("Conexión cerrada con el rival.","err"));S.conn.on("error",()=>setOnline("Error en la conexión P2P.","err"));}
+function onData(d){if(!d||!d.type)return;
+  if(d.type==="hello"){if(S.isHost){S.remote=d.name||"Rival";setOnline(`Rival conectado: ${S.remote}`,"ok");$("startMatchBtn").disabled=false;}return;}
+  if(d.type==="start"){if(!S.isHost)applyStart(d);return;}
+  if(d.type==="result"){if(d.round!==S.round)return;S.results.remote={lat:d.lat,lng:d.lng,dist:d.dist,score:d.score};S.rivalScore+=d.score;updScore();if(S.revealed===false&&S.locked){reveal(S.lastScore||0,null,false);}else if(!S.locked){$("guessHint").textContent=`${S.remote} ya confirmó. Marca y confirma tú.`;}return;}
+  if(d.type==="next"){if(!S.isHost){S.round=+d.round||0;renderRound();}return;}
+  if(d.type==="end"){if(!S.isHost)finish();return;}
+}
+function closeOnline(ui){try{S.conn&&S.conn.close();}catch(e){}try{S.peer&&S.peer.destroy();}catch(e){}S.conn=S.peer=null;S.online=false;S.isHost=false;S.room="";S.remote="";if(ui){$("startMatchBtn").disabled=true;$("leaveBtn").style.display="none";setOnline("Sin conexión online.");}}
+const peerId=c=>"vigogeo-"+String(c).toLowerCase();
+function randCode(){const ch="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let o="";for(let i=0;i<5;i++)o+=ch[Math.floor(Math.random()*ch.length)];return o;}
+function host(at=0){closeOnline(false);if(at>4){setOnline("No se pudo crear sala. Reintenta.","err");return;}S.online=true;S.isHost=true;S.room=randCode();setOnline(`Creando sala ${S.room}…`,"");$("leaveBtn").style.display="block";S.peer=new Peer(peerId(S.room));S.peer.on("open",()=>setOnline(`Sala ${S.room}. Comparte el código.`,"ok"));S.peer.on("connection",c=>{S.conn=c;bindConn();});S.peer.on("error",e=>{if(e&&e.type==="unavailable-id"){setTimeout(()=>host(at+1),350);return;}setOnline(`Error: ${e&&e.type||"?"}`,"err");});}
+function join(){const c=($("roomInput").value||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,8);if(!c){setOnline("Introduce un código.","err");return;}closeOnline(false);S.online=true;S.isHost=false;S.room=c;setOnline(`Conectando a ${c}…`);$("leaveBtn").style.display="block";S.peer=new Peer();S.peer.on("open",()=>{const cn=S.peer.connect(peerId(c),{reliable:true});S.conn=cn;bindConn();cn.on("open",()=>{send({type:"hello",name:nick()});setOnline(`Conectado a ${c}. Esperando al anfitrión.`,"ok");});});S.peer.on("error",e=>setOnline(`Error: ${e&&e.type||"?"}${e&&e.type==="peer-unavailable"?" (revisa el código)":""}`,"err"));}
+
+/* ---- Botones ---- */
+$("soloBtn").onclick=startSolo;
+$("createBtn").onclick=()=>host(0);
+$("joinBtn").onclick=join;
+$("startMatchBtn").onclick=startMatch;
+$("leaveBtn").onclick=()=>{closeOnline(true);show("lobby");};
+$("confirmBtn").onclick=confirm;
+$("nextBtn").onclick=next;
+$("againBtn").onclick=()=>{if(S.online){show("lobby");setOnline(S.isHost?"Listo para nueva partida. Pulsa Empezar.":"Conectado. Espera al anfitrión.");return;}startSolo();};
+$("homeBtn").onclick=()=>{closeOnline(true);show("lobby");};
+document.addEventListener("keydown",e=>{if(!$("game").classList.contains("active"))return;if(e.key==="Enter"&&!$("nextBtn").disabled){e.preventDefault();next();}if(e.key===" "&&!$("confirmBtn").disabled){e.preventDefault();confirm();}});
+
+/* ---- Arranque: cargar banco ---- */
+let POOL_CACHE=[];
+(async function boot(){
+  try{
+    const pool=await loadPool();
+    POOL_CACHE=pool;
+    if(pool.length>=12){setPool(`${pool.length} fotos de Vigo cargadas · jugarás ${Math.min(+$("rounds").value,pool.length)} aleatorias por partida`,"");$("soloBtn").disabled=false;}
+    else{setPool(`Solo ${pool.length} fotos disponibles. Revisa tu conexión y recarga.`,"err");$("soloBtn").disabled=pool.length>0;}
+  }catch(e){setPool("No se pudo cargar el banco de fotos (¿sin internet?). Recarga la página.","err");}
+})();
+</script>
 </body>
 </html>
