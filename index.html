@@ -1,0 +1,1332 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VigoGuessr · GeoGuessr de Vigo</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+
+  <style>
+    :root {
+      --bg: #071018;
+      --bg2: #0b1620;
+      --card: rgba(13, 27, 36, 0.94);
+      --card2: rgba(16, 32, 43, 0.95);
+      --border: rgba(94, 163, 192, 0.18);
+      --text: #e8f1f5;
+      --muted: #9fb3c0;
+      --accent: #22d3ee;
+      --good: #34d399;
+      --warn: #fbbf24;
+      --bad: #fb7185;
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top left, rgba(34, 211, 238, 0.14), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(52, 211, 153, 0.12), transparent 25%),
+        linear-gradient(135deg, var(--bg), var(--bg2) 45%, #09131b);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    body {
+      padding: 16px;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.7rem, 4vw, 2.5rem);
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+    }
+
+    .pill {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .screen {
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    .panel,
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+
+    .panel {
+      padding: 18px;
+      margin-bottom: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    input, select, button {
+      font: inherit;
+    }
+
+    input, select {
+      width: 100%;
+      background: #0d1b24;
+      color: var(--text);
+      border: 1px solid #25465c;
+      border-radius: 14px;
+      padding: 12px 14px;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.12);
+    }
+
+    button {
+      border: 0;
+      border-radius: 16px;
+      padding: 12px 16px;
+      font-weight: 900;
+      cursor: pointer;
+      background: var(--accent);
+      color: #06131a;
+      transition: transform 0.14s ease, opacity 0.14s ease, background 0.14s ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    button.secondary {
+      background: #1d3547;
+      color: var(--text);
+      border: 1px solid #31556e;
+    }
+
+    button.danger {
+      background: rgba(251, 113, 133, 0.16);
+      color: #ffd7dd;
+      border: 1px solid rgba(251, 113, 133, 0.35);
+    }
+
+    .status {
+      margin-top: 10px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: #0c1922;
+      border: 1px solid #25465c;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .hint {
+      color: var(--muted);
+      line-height: 1.5;
+      margin: 8px 0 0;
+    }
+
+    .game-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-weight: 900;
+    }
+
+    .game-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .image-box {
+      background: #0c1922;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      overflow: hidden;
+      min-height: 320px;
+      display: grid;
+      place-items: center;
+      padding: 10px;
+    }
+
+    .image-box img {
+      width: 100%;
+      max-height: 420px;
+      object-fit: contain;
+      border-radius: 16px;
+      display: none;
+      background: #0c1922;
+    }
+
+    #map {
+      width: 100%;
+      height: 460px;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      overflow: hidden;
+      background: #0c1922;
+      z-index: 1;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 14px;
+    }
+
+    #guessText {
+      flex: 1 1 260px;
+      color: var(--muted);
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .feedback {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: #0c1922;
+      border: 1px solid #25465c;
+      line-height: 1.45;
+    }
+
+    .feedback.hidden {
+      display: none;
+    }
+
+    .feedback strong {
+      color: var(--text);
+    }
+
+    .end-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .score-box {
+      background: #0f202b;
+      border: 1px solid #25465c;
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .score-box span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+
+    .score-box strong {
+      font-size: 1.4rem;
+    }
+
+    .big {
+      font-size: clamp(2rem, 6vw, 3.2rem);
+      font-weight: 950;
+      letter-spacing: -0.05em;
+      margin: 10px 0;
+      color: var(--good);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    footer {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    footer a {
+      color: #8fd7ec;
+    }
+
+    @media (max-width: 900px) {
+      .game-grid {
+        grid-template-columns: 1fr;
+      }
+
+      #map {
+        height: 380px;
+      }
+
+      .image-box img {
+        max-height: 320px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>VigoGuessr</h1>
+        <p class="subtitle">GeoGuessr ambientado en Vigo: mira la foto y sitúala en el mapa.</p>
+      </div>
+      <div class="pill" id="modePill">Modo: solo</div>
+    </header>
+
+    <main>
+      <!-- HOME -->
+      <section id="home" class="screen active">
+        <div class="panel">
+          <div class="grid">
+            <div>
+              <h2 style="margin-top:0;">Jugar solo</h2>
+              <p class="hint">
+                Elige número de rondas y dificultad. Luego pulsa “Jugar solo”.
+              </p>
+
+              <div class="row" style="margin-top:12px;">
+                <label>
+                  Rondas
+                  <select id="rounds">
+                    <option value="5">5</option>
+                    <option value="8" selected>8</option>
+                    <option value="11">Todas (11)</option>
+                  </select>
+                </label>
+
+                <label>
+                  Dificultad del mapa
+                  <select id="zoom">
+                    <option value="13">Fácil · más zoom</option>
+                    <option value="12" selected>Normal</option>
+                    <option value="11">Difícil · menos zoom</option>
+                  </select>
+                </label>
+
+                <label>
+                  Apodo
+                  <input id="nick" maxlength="14" value="Vigo" />
+                </label>
+              </div>
+
+              <div class="row" style="margin-top:12px;">
+                <button id="soloBtn">Jugar solo</button>
+              </div>
+            </div>
+
+            <div>
+              <h2 style="margin-top:0;">Jugar con otro dispositivo</h2>
+              <p class="hint">
+                Uno crea sala y comparte el código. El otro abre el mismo HTML en otro móvil/PC,
+                introduce el código y pulsa “Unirse”.
+              </p>
+
+              <div class="row" style="margin-top:12px;">
+                <button id="createBtn">Crear sala</button>
+
+                <label style="flex:1 1 180px;">
+                  Código de sala
+                  <input id="roomInput" placeholder="EJ. K7M2P" maxlength="8" />
+                </label>
+
+                <button id="joinBtn">Unirse</button>
+              </div>
+
+              <div id="onlineStatus" class="status">Sin conexión online.</div>
+
+              <div class="row" style="margin-top:12px;">
+                <button id="startMatchBtn" disabled>Empezar partida online</button>
+                <button id="leaveBtn" class="secondary hidden">Salir de sala</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3 style="margin-top:0;">Cómo compartirlo</h3>
+          <p class="hint">
+            Puedes enviar este archivo HTML por WhatsApp, correo, Drive, etc. Cada persona lo abre
+            en su navegador. Para el modo online, ambos necesitan internet.
+          </p>
+          <p class="hint">
+            Si al abrirlo como archivo local el modo online falla en algún móvil, sube el HTML a
+            un hosting estático gratuito como GitHub Pages, Netlify o Cloudflare Pages.
+          </p>
+        </div>
+      </section>
+
+      <!-- GAME -->
+      <section id="game" class="screen">
+        <div class="card" style="padding:16px;">
+          <div class="game-top">
+            <div id="roundLabel">Ronda 1</div>
+            <div id="scoreLabel">Tú: 0</div>
+          </div>
+
+          <div class="game-grid">
+            <div class="image-box">
+              <img id="streetImg" alt="Foto de Vigo" referrerpolicy="no-referrer" />
+              <div id="imgNote" style="color:var(--muted); padding:16px; text-align:center;"></div>
+            </div>
+
+            <div id="map"></div>
+          </div>
+
+          <div class="controls">
+            <div id="guessText">Haz clic en el mapa para marcar tu respuesta.</div>
+            <div class="row">
+              <button id="confirmBtn" disabled>Confirmar</button>
+              <button id="nextBtn" disabled>Siguiente</button>
+              <button id="quitBtn" class="danger">Salir</button>
+            </div>
+          </div>
+
+          <div id="feedback" class="feedback hidden"></div>
+        </div>
+      </section>
+
+      <!-- END -->
+      <section id="end" class="screen">
+        <div class="card" style="padding:18px;">
+          <h2 id="endTitle" style="margin:0;">Resultado</h2>
+          <p id="endText" class="hint"></p>
+
+          <div class="big" id="finalScore">0 pts</div>
+
+          <div class="end-grid">
+            <div class="score-box">
+              <span>Tu puntuación</span>
+              <strong id="localFinal">0</strong>
+            </div>
+
+            <div class="score-box" id="remoteRow" style="display:none;">
+              <span id="remoteLabel">Rival</span>
+              <strong id="remoteFinal">0</strong>
+            </div>
+
+            <div class="score-box">
+              <span>Rondas</span>
+              <strong id="roundsFinal">0</strong>
+            </div>
+
+            <div class="score-box">
+              <span>Precisión media</span>
+              <strong id="accuracyFinal">0%</strong>
+            </div>
+          </div>
+
+          <div class="row">
+            <button id="againBtn">Jugar otra vez</button>
+            <button id="homeBtn" class="secondary">Menú</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      Mapa: © OpenStreetMap contributors. Imágenes: Wikimedia Commons.
+      Este proyecto es una versión local/educativa tipo GeoGuessr centrada en Vigo.
+    </footer>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const fp = (name) =>
+      `https://commons.wikimedia.org/wiki/Special:FilePath/${name}?width=1280`;
+
+    const DATA = [
+      {
+        id: 1,
+        place: "Calle del Príncipe · adornos navideños",
+        lat: 42.2381,
+        lng: -8.7222,
+        img: fp("Navidad_en_la_Calle_del_Pr%C3%ADncipe.jpg")
+      },
+      {
+        id: 2,
+        place: "Calle del Príncipe desde la Puerta del Sol",
+        lat: 42.2370,
+        lng: -8.7207,
+        img: fp("Vigo,_r%C3%BAa_Pr%C3%ADncipe_dende_a_Porta_do_Sol.JPG")
+      },
+      {
+        id: 3,
+        place: "Calle del Príncipe, lado del gimnasio",
+        lat: 42.2384,
+        lng: -8.7230,
+        img: fp("Vigo,_CALLE_DEL_PR%C3%8DNCIPE,_LADO_DEL_GIMNASIO,_Eugenio_Krapf.jpg")
+      },
+      {
+        id: 4,
+        place: "Rúa do Príncipe, Vigo",
+        lat: 42.2378,
+        lng: -8.7216,
+        img: fp("R%C3%BAa_do_Pr%C3%ADncipe,_Vigo.jpg")
+      },
+      {
+        id: 5,
+        place: "MARCO · Museo de Arte Contemporánea de Vigo",
+        lat: 42.2389,
+        lng: -8.7243,
+        img: fp("Museo_de_Arte_Contempor%C3%A1nea_001.JPG")
+      },
+      {
+        id: 6,
+        place: "Calle del Príncipe · vista histórica",
+        lat: 42.2379,
+        lng: -8.7219,
+        img: fp("Vigo-Principe91_%283196735180%29.jpg")
+      },
+      {
+        id: 7,
+        place: "A rúa do Príncipe",
+        lat: 42.2377,
+        lng: -8.7214,
+        img: fp("A_r%C3%BAa_do_Pr%C3%ADncipe._Vigo.jpg")
+      },
+      {
+        id: 8,
+        place: "A Sede · Celta de Vigo, centro de Vigo",
+        lat: 42.2382,
+        lng: -8.7225,
+        img: fp("A_Sede_%28Celta_de_Vigo%29.jpg")
+      },
+      {
+        id: 9,
+        place: "Farola navideña en la calle Urzáiz",
+        lat: 42.2365,
+        lng: -8.7232,
+        img: fp("Navidad_en_la_farola_de_la_calle_Urz%C3%A1iz_de_Vigo.jpg")
+      },
+      {
+        id: 10,
+        place: "Calle Urzáiz, junto a la Farola",
+        lat: 42.2364,
+        lng: -8.7231,
+        img: fp("Primeras_mesas_informativas_de_Vox_en_Vigo_%2846874465934%29.jpg")
+      },
+      {
+        id: 11,
+        place: "Casa Torre de Pazos Figueroa y Casa Torre de Ceta Arines · zona Casco Vello",
+        lat: 42.2362,
+        lng: -8.7240,
+        img: fp("Casa_Torre_de_Pazos_Figueroa_y_Casa_Torre_de_Ceta_Arines,_Vigo.jpg")
+      }
+    ];
+
+    const CENTER = [42.2375, -8.7225];
+
+    let map = null;
+    let guessMarker = null;
+    let correctMarker = null;
+    let remoteMarker = null;
+    let localLine = null;
+    let remoteLine = null;
+    let guessLatLng = null;
+
+    const state = {
+      online: false,
+      isHost: false,
+      peer: null,
+      conn: null,
+      roomCode: "",
+      remoteName: "",
+      settings: {
+        rounds: 8,
+        zoom: 12
+      },
+      seed: 0,
+      order: [],
+      round: 0,
+      scores: {
+        local: 0,
+        remote: 0
+      },
+      results: {
+        local: null,
+        remote: null
+      },
+      locked: false,
+      revealed: false
+    };
+
+    function showScreen(id) {
+      document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
+      $(id).classList.add("active");
+
+      if (id === "game" && map) {
+        setTimeout(() => map.invalidateSize(), 80);
+      }
+    }
+
+    function setOnlineStatus(msg) {
+      $("onlineStatus").textContent = msg;
+    }
+
+    function setGameStatus(msg) {
+      $("guessText").textContent = msg;
+    }
+
+    function updateModePill() {
+      $("modePill").textContent = state.online
+        ? `Modo: online ${state.isHost ? "(anfitrión)" : "(invitado)"}${state.roomCode ? " · " + state.roomCode : ""}`
+        : "Modo: solo";
+    }
+
+    function getNick() {
+      return ($("nick").value || "Vigo").trim().slice(0, 14) || "Vigo";
+    }
+
+    function normalizeCode(v) {
+      return String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+    }
+
+    function randomCode() {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let out = "";
+      for (let i = 0; i < 5; i++) {
+        out += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return out;
+    }
+
+    function peerIdFor(code) {
+      return "vigogeo-" + String(code).toLowerCase();
+    }
+
+    function mulberry32(a) {
+      return function () {
+        a |= 0;
+        a = (a + 0x6d2b79f5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function buildOrder(seed, count) {
+      const rng = mulberry32(seed);
+      const indexes = DATA.map((_, i) => i);
+
+      for (let i = indexes.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [indexes[i], indexes[j]] = [indexes[j], indexes[i]];
+      }
+
+      return indexes.slice(0, Math.min(count, DATA.length));
+    }
+
+    function currentItem() {
+      return DATA[state.order[state.round]];
+    }
+
+    function haversine(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const toRad = (x) => (x * Math.PI) / 180;
+
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+
+      return 2 * R * Math.asin(Math.sqrt(a));
+    }
+
+    function calcScore(meters) {
+      const km = meters / 1000;
+      return Math.max(0, Math.round(5000 * Math.exp(-km / 1.5)));
+    }
+
+    function fmtDist(m) {
+      if (m < 1000) return `${Math.round(m)} m`;
+      return `${(m / 1000).toFixed(2)} km`;
+    }
+
+    function ensureMap() {
+      if (map) return;
+
+      map = L.map("map", {
+        zoomControl: true,
+        attributionControl: true,
+        maxBounds: L.latLngBounds([
+          [42.16, -8.82],
+          [42.31, -8.63]
+        ]),
+        minZoom: 10,
+        maxZoom: 18
+      }).setView(CENTER, state.settings.zoom);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors"
+      }).addTo(map);
+    }
+
+    function clearLayers() {
+      [guessMarker, correctMarker, remoteMarker, localLine, remoteLine].forEach((layer) => {
+        if (layer && map) map.removeLayer(layer);
+      });
+
+      guessMarker = null;
+      correctMarker = null;
+      remoteMarker = null;
+      localLine = null;
+      remoteLine = null;
+    }
+
+    function updateScoreLabel() {
+      const remote = state.online ? ` · ${state.remoteName || "Rival"}: ${state.scores.remote}` : "";
+      $("scoreLabel").textContent = `Tú: ${state.scores.local}${remote}`;
+    }
+
+    function onMapClick(e) {
+      if (state.locked) return;
+
+      guessLatLng = e.latlng;
+
+      if (guessMarker) map.removeLayer(guessMarker);
+
+      guessMarker = L.circleMarker(e.latlng, {
+        radius: 9,
+        color: "#22d3ee",
+        weight: 2,
+        fillColor: "#22d3ee",
+        fillOpacity: 0.75
+      }).addTo(map);
+
+      $("confirmBtn").disabled = false;
+      setGameStatus(`Marcado: ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`);
+    }
+
+    function renderRound() {
+      const item = currentItem();
+
+      state.results = { local: null, remote: null };
+      state.locked = false;
+      state.revealed = false;
+      guessLatLng = null;
+
+      clearLayers();
+
+      $("roundLabel").textContent = `Ronda ${state.round + 1} de ${state.order.length}`;
+      updateScoreLabel();
+
+      $("confirmBtn").disabled = true;
+      $("nextBtn").disabled = true;
+      $("feedback").classList.add("hidden");
+      $("feedback").innerHTML = "";
+
+      setGameStatus("Haz clic en el mapa para marcar tu respuesta.");
+
+      const img = $("streetImg");
+      const note = $("imgNote");
+
+      img.style.display = "none";
+      note.textContent = "Cargando imagen...";
+
+      let triedFallback = false;
+
+      img.onload = () => {
+        img.style.display = "block";
+        note.textContent = "";
+      };
+
+      img.onerror = () => {
+        if (!triedFallback) {
+          triedFallback = true;
+          img.src = item.img.split("?")[0];
+          return;
+        }
+
+        img.style.display = "none";
+        note.textContent =
+          "No se pudo cargar la imagen. Puedes intentar adivinar por el contexto del mapa o salir y volver a entrar.";
+      };
+
+      img.src = item.img;
+
+      if (map) {
+        map.setView(CENTER, state.settings.zoom);
+        map.off("click", onMapClick);
+        map.on("click", onMapClick);
+      }
+    }
+
+    function startGameUI() {
+      showScreen("game");
+      ensureMap();
+      renderRound();
+    }
+
+    function startSolo() {
+      closeOnline(false);
+
+      state.online = false;
+      state.isHost = false;
+      state.remoteName = "";
+      state.settings.rounds = Math.min(Number($("rounds").value || 8), DATA.length);
+      state.settings.zoom = Number($("zoom").value || 12);
+      state.seed = Math.floor(Math.random() * 1e9);
+      state.order = buildOrder(state.seed, state.settings.rounds);
+      state.round = 0;
+      state.scores = { local: 0, remote: 0 };
+
+      updateModePill();
+      startGameUI();
+    }
+
+    function applyStart(data) {
+      state.online = true;
+      state.settings.rounds = Math.min(Number(data.rounds || 8), DATA.length);
+      state.settings.zoom = Number(data.zoom || 12);
+      state.seed = Number(data.seed || Math.floor(Math.random() * 1e9));
+      state.order = buildOrder(state.seed, state.settings.rounds);
+      state.round = 0;
+      state.scores = { local: 0, remote: 0 };
+
+      if (!state.isHost) {
+        state.remoteName = data.hostName || "Anfitrión";
+      }
+
+      updateModePill();
+      startGameUI();
+    }
+
+    function startMatch() {
+      if (!state.conn || !state.conn.open) {
+        setOnlineStatus("No hay rival conectado todavía.");
+        return;
+      }
+
+      state.settings.rounds = Math.min(Number($("rounds").value || 8), DATA.length);
+      state.settings.zoom = Number($("zoom").value || 12);
+
+      const data = {
+        type: "start",
+        seed: Math.floor(Math.random() * 1e9),
+        rounds: state.settings.rounds,
+        zoom: state.settings.zoom,
+        hostName: getNick()
+      };
+
+      send(data);
+      applyStart(data);
+    }
+
+    function confirmGuess() {
+      if (!guessLatLng || state.locked) return;
+
+      state.locked = true;
+      map.off("click", onMapClick);
+
+      const item = currentItem();
+      const dist = haversine(guessLatLng.lat, guessLatLng.lng, item.lat, item.lng);
+      const score = calcScore(dist);
+
+      state.results.local = {
+        round: state.round,
+        dist,
+        score,
+        lat: guessLatLng.lat,
+        lng: guessLatLng.lng
+      };
+
+      const onlineActive = state.online && state.conn && state.conn.open;
+
+      if (onlineActive) {
+        send({
+          type: "result",
+          round: state.round,
+          dist,
+          score,
+          lat: guessLatLng.lat,
+          lng: guessLatLng.lng
+        });
+
+        setGameStatus("Respuesta enviada. Esperando al rival...");
+
+        if (state.results.remote) {
+          revealRound();
+        }
+      } else {
+        revealRound();
+      }
+    }
+
+    function revealRound() {
+      if (state.revealed || !state.results.local) return;
+
+      state.revealed = true;
+
+      const item = currentItem();
+      const local = state.results.local;
+      const remote = state.results.remote;
+
+      correctMarker = L.circleMarker([item.lat, item.lng], {
+        radius: 10,
+        color: "#34d399",
+        weight: 2,
+        fillColor: "#34d399",
+        fillOpacity: 0.72
+      }).addTo(map);
+
+      localLine = L.polyline(
+        [
+          [local.lat, local.lng],
+          [item.lat, item.lng]
+        ],
+        {
+          color: "#22d3ee",
+          weight: 2,
+          dashArray: "6, 8"
+        }
+      ).addTo(map);
+
+      if (remote && typeof remote.lat === "number" && typeof remote.lng === "number") {
+        remoteMarker = L.circleMarker([remote.lat, remote.lng], {
+          radius: 9,
+          color: "#fbbf24",
+          weight: 2,
+          fillColor: "#fbbf24",
+          fillOpacity: 0.72
+        }).addTo(map);
+
+        remoteLine = L.polyline(
+          [
+            [remote.lat, remote.lng],
+            [item.lat, item.lng]
+          ],
+          {
+            color: "#fbbf24",
+            weight: 2,
+            dashArray: "4, 10"
+          }
+        ).addTo(map);
+      }
+
+      const boundsPoints = [
+        [item.lat, item.lng],
+        [local.lat, local.lng]
+      ];
+
+      if (remote && typeof remote.lat === "number" && typeof remote.lng === "number") {
+        boundsPoints.push([remote.lat, remote.lng]);
+      }
+
+      map.fitBounds(L.latLngBounds(boundsPoints).pad(0.35));
+
+      state.scores.local += local.score;
+      if (remote) state.scores.remote += remote.score;
+
+      updateScoreLabel();
+
+      let html = `<strong>${item.place}</strong><br>`;
+      html += `Tu distancia: ${fmtDist(local.dist)} · ${local.score} pts`;
+
+      if (remote) {
+        html += `<br>${state.remoteName || "Rival"}: ${fmtDist(remote.dist)} · ${remote.score} pts`;
+      }
+
+      $("feedback").innerHTML = html;
+      $("feedback").classList.remove("hidden");
+
+      const onlineActive = state.online && state.conn && state.conn.open;
+
+      if (onlineActive && !state.isHost) {
+        $("nextBtn").disabled = true;
+        setGameStatus("Esperando al anfitrión para continuar...");
+      } else {
+        $("nextBtn").disabled = false;
+        setGameStatus("Puedes pasar a la siguiente ronda.");
+      }
+    }
+
+    function nextRound() {
+      const onlineActive = state.online && state.conn && state.conn.open;
+
+      if (onlineActive && !state.isHost) return;
+
+      if (state.round + 1 >= state.order.length) {
+        if (onlineActive) send({ type: "end" });
+        finishMatch();
+        return;
+      }
+
+      state.round += 1;
+
+      if (onlineActive) {
+        send({ type: "next", round: state.round });
+      }
+
+      renderRound();
+    }
+
+    function finishMatch() {
+      showScreen("end");
+
+      const local = state.scores.local;
+      const remote = state.scores.remote;
+      const max = state.order.length * 5000;
+      const pct = max ? Math.round((local / max) * 100) : 0;
+
+      $("finalScore").textContent = `${local} pts`;
+      $("localFinal").textContent = String(local);
+      $("remoteFinal").textContent = String(remote);
+      $("roundsFinal").textContent = String(state.order.length);
+      $("accuracyFinal").textContent = `${pct}%`;
+
+      const onlineActive = state.online && state.conn && state.conn.open;
+
+      $("remoteRow").style.display = onlineActive || state.remoteName ? "block" : "none";
+      $("remoteLabel").textContent = state.remoteName || "Rival";
+
+      let title = "Resultado";
+      let text = "";
+
+      if (onlineActive || state.remoteName) {
+        if (local > remote) {
+          title = "Ganas tú";
+          text = `Has superado a ${state.remoteName || "tu rival"} por ${local - remote} puntos.`;
+        } else if (remote > local) {
+          title = "Gana tu rival";
+          text = `${state.remoteName || "Tu rival"} te ha ganado por ${remote - local} puntos.`;
+        } else {
+          title = "Empate técnico";
+          text = "Misma puntuación. Habría que jugar una ronda de desempate en la rúa do Príncipe.";
+        }
+      } else {
+        if (pct >= 90) {
+          title = "Lenda de Vigo";
+          text = "Casi perfecto. Conoces el centro como si vivieras allí.";
+        } else if (pct >= 70) {
+          title = "Vigués o viguesa de pro";
+          text = "Muy buen nivel. Solo te falta un paseo más por Urzáiz, Príncipe, Real y Areal.";
+        } else if (pct >= 45) {
+          title = "Paseante atento";
+          text = "Vas bien. Sigue mirando fachadas, plazas y nombres de calles.";
+        } else {
+          title = "Turista curioso";
+          text = "Toca reaprender el callejero de Vigo. Vuelve a intentarlo.";
+        }
+      }
+
+      $("endTitle").textContent = title;
+      $("endText").textContent = text;
+    }
+
+    function send(msg) {
+      if (state.conn && state.conn.open) {
+        try {
+          state.conn.send(msg);
+        } catch (e) {
+          console.warn("No se pudo enviar mensaje:", e);
+        }
+      }
+    }
+
+    function bindConn() {
+      if (!state.conn) return;
+
+      state.conn.on("data", onData);
+      state.conn.on("close", () => {
+        setOnlineStatus("Conexión cerrada con el rival.");
+      });
+      state.conn.on("error", () => {
+        setOnlineStatus("Error en la conexión P2P.");
+      });
+    }
+
+    function onData(data) {
+      if (!data || !data.type) return;
+
+      if (data.type === "hello") {
+        if (state.isHost) {
+          state.remoteName = data.name || "Rival";
+          setOnlineStatus(`Rival conectado: ${state.remoteName}`);
+          $("startMatchBtn").disabled = false;
+          updateModePill();
+        }
+        return;
+      }
+
+      if (data.type === "start") {
+        if (!state.isHost) {
+          applyStart(data);
+        }
+        return;
+      }
+
+      if (data.type === "result") {
+        if (data.round !== state.round) return;
+
+        state.results.remote = {
+          round: data.round,
+          dist: data.dist,
+          score: data.score,
+          lat: data.lat,
+          lng: data.lng
+        };
+
+        if (state.results.local) {
+          revealRound();
+        } else {
+          setGameStatus(`${state.remoteName || "El rival"} ya ha confirmado. Marca y confirma tú.`);
+        }
+        return;
+      }
+
+      if (data.type === "next") {
+        if (!state.isHost) {
+          state.round = Number(data.round || 0);
+          renderRound();
+        }
+        return;
+      }
+
+      if (data.type === "end") {
+        if (!state.isHost) {
+          finishMatch();
+        }
+        return;
+      }
+    }
+
+    function closeOnline(updateUi = true) {
+      try {
+        if (state.conn) state.conn.close();
+      } catch (e) {}
+
+      try {
+        if (state.peer) state.peer.destroy();
+      } catch (e) {}
+
+      state.conn = null;
+      state.peer = null;
+      state.online = false;
+      state.isHost = false;
+      state.roomCode = "";
+      state.remoteName = "";
+
+      if (updateUi) {
+        $("startMatchBtn").disabled = true;
+        $("leaveBtn").classList.add("hidden");
+        setOnlineStatus("Sin conexión online.");
+        updateModePill();
+      }
+    }
+
+    function hostRoom(attempt = 0) {
+      closeOnline(false);
+
+      if (attempt > 4) {
+        setOnlineStatus("No se pudo crear la sala. Inténtalo de nuevo en unos segundos.");
+        return;
+      }
+
+      state.online = true;
+      state.isHost = true;
+      state.roomCode = randomCode();
+
+      const id = peerIdFor(state.roomCode);
+
+      updateModePill();
+      setOnlineStatus(`Creando sala ${state.roomCode}...`);
+      $("leaveBtn").classList.remove("hidden");
+
+      state.peer = new Peer(id, { debug: 1 });
+
+      state.peer.on("open", () => {
+        setOnlineStatus(`Sala creada: ${state.roomCode}. Comparte este código con el otro dispositivo.`);
+      });
+
+      state.peer.on("connection", (conn) => {
+        state.conn = conn;
+        bindConn();
+      });
+
+      state.peer.on("error", (err) => {
+        if (err && err.type === "unavailable-id") {
+          setTimeout(() => hostRoom(attempt + 1), 350);
+          return;
+        }
+
+        setOnlineStatus(`Error al crear sala: ${err?.type || "desconocido"}.`);
+      });
+    }
+
+    function joinRoom() {
+      const code = normalizeCode($("roomInput").value);
+
+      if (!code) {
+        setOnlineStatus("Introduce un código de sala.");
+        return;
+      }
+
+      closeOnline(false);
+
+      state.online = true;
+      state.isHost = false;
+      state.roomCode = code;
+
+      updateModePill();
+      setOnlineStatus(`Conectando a la sala ${code}...`);
+      $("leaveBtn").classList.remove("hidden");
+
+      state.peer = new Peer(undefined, { debug: 1 });
+
+      state.peer.on("open", () => {
+        const conn = state.peer.connect(peerIdFor(code), { reliable: true });
+        state.conn = conn;
+        bindConn();
+
+        conn.on("open", () => {
+          send({ type: "hello", name: getNick() });
+          setOnlineStatus(`Conectado a ${code}. Esperando a que el anfitrión empiece la partida.`);
+        });
+      });
+
+      state.peer.on("error", (err) => {
+        const extra = err?.type === "peer-unavailable" ? ". Revisa el código." : "";
+        setOnlineStatus(`Error al unirte: ${err?.type || "desconocido"}${extra}`);
+      });
+    }
+
+    $("soloBtn").addEventListener("click", startSolo);
+    $("createBtn").addEventListener("click", () => hostRoom(0));
+    $("joinBtn").addEventListener("click", joinRoom);
+    $("startMatchBtn").addEventListener("click", startMatch);
+
+    $("leaveBtn").addEventListener("click", () => {
+      closeOnline(true);
+      showScreen("home");
+    });
+
+    $("confirmBtn").addEventListener("click", confirmGuess);
+    $("nextBtn").addEventListener("click", nextRound);
+
+    $("quitBtn").addEventListener("click", () => {
+      closeOnline(true);
+      showScreen("home");
+    });
+
+    $("againBtn").addEventListener("click", () => {
+      const onlineActive = state.online && state.conn && state.conn.open;
+
+      if (onlineActive) {
+        showScreen("home");
+
+        if (state.isHost) {
+          setOnlineStatus("Listo para nueva partida. Pulsa “Empezar partida online”.");
+        } else {
+          setOnlineStatus("Conectado. Espera a que el anfitrión empiece la nueva partida.");
+        }
+
+        return;
+      }
+
+      startSolo();
+    });
+
+    $("homeBtn").addEventListener("click", () => {
+      closeOnline(true);
+      showScreen("home");
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (!$("game").classList.contains("active")) return;
+
+      if (e.key === "Enter" && !$("nextBtn").disabled) {
+        e.preventDefault();
+        nextRound();
+      }
+
+      if (e.key === " " && !$("confirmBtn").disabled) {
+        e.preventDefault();
+        confirmGuess();
+      }
+    });
+
+    updateModePill();
+  </script>
+</body>
+</html>
